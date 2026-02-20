@@ -207,7 +207,7 @@ appServer.get('/ping', (req, res) => {
 
 // 3. Redirect the root URL (/) directly to your game's login or index page
 appServer.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(process.cwd(), 'index.html'));
 });
 
 appServer.listen(port, () => {
