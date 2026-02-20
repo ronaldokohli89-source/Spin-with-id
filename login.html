@@ -36,6 +36,19 @@
         .whatsapp-link { display: inline-block; margin-top: 25px; font-size: 12px; color: #666; text-decoration: none; }
         .whatsapp-link span { color: var(--gold); text-decoration: underline; cursor: pointer; }
         #error { color: #ff1744; font-size: 12px; margin-top: 15px; display: none; }
+        .copyright-link {
+    position: absolute;
+    bottom: 20px;
+    font-size: 11px;
+    color: #444; /* Subtle dark gray */
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: 0.3s;
+}
+
+.copyright-link:hover {
+    color: var(--gold); /* Lights up gold when hovered */
+}
     </style>
 </head>
 <body>
@@ -56,10 +69,11 @@
         <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Sign In</button>
         <p id="error">Invalid Credentials</p>
 
-        <a href="#" class="whatsapp-link" onclick="contactAdmin('911234567890')">
+        <a href="#" class="whatsapp-link" onclick="contactAdmin('916289187160')">
             Don't have an ID? <span>Sign Up via WhatsApp</span>
         </a>
     </div>
+    <a href="admin.html" class="copyright-link">&copy; 2026 Royal Vegas. All rights reserved.</a>
 
     <script>
         // 1. FIREBASE INIT
