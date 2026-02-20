@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royal Vegas - User Registry & Requests</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --gold: #d4af37;
+            --dark: #0a0a0a;
+            --panel: #141414;
+            --border: rgba(212, 175, 55, 0.3);
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--gold);
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1, h2 {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        /* --- SECURITY OVERLAY --- */
+        #securityOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-box {
+            background: var(--panel);
+            padding: 30px;
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            outline: none;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        input:focus { border-color: var(--gold); }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            background: var(--gold);
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            color: black;
+            transition: 0.3s;
+        }
+        button:hover { transform: scale(1.05); }
+
+        /* --- MAIN LIST --- */
+        #mainContent {
+            display: none; /* Hidden until unlocked */
+            width: 100%;
+            max-width: 800px; /* Widened to fit the table */
+        }
+
+        .section-box {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        /* --- TABLE STYLES FOR REQUESTS --- */
+        table { width: 100%; border-collapse: collapse; color: white; font-size: 14px; }
+        th { text-align: left; padding: 12px; color: var(--gold); border-bottom: 1px solid #333; background: #111; }
+        td { padding: 15px 12px; border-bottom: 1px solid #222; }
+        
+        .type-dep { color: #00e676; font-weight: bold; }
+        .type-with { color: #ff1744; font-weight: bold; }
+        
+        .btn-approve { background: #00e676; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; color: black; margin-right: 5px; font-size: 12px;}
+        .btn-reject { background: #ff1744; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; font-size: 12px;}
+
+        /* --- USERS LIST --- */
+        .user-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.2s;
+        }
+
+        .user-row:hover { background: rgba(212, 175, 55, 0.05); }
+
+        .user-id {
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        .copy-btn:hover { background: var(--gold); color: black; }
+
+        .count-badge {
+            background: #222;
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+            color: #888;
+            font-size: 14px;
+            display: inline-block;
+        }
+
+        .user-bal { color: #00e676; font-weight: bold; margin-right: 15px; font-family: 'Roboto', sans-serif; }
+
+        .add-btn { background: #00e676; border: none; padding: 5px 10px; border-radius: 4px; color: black; font-weight: bold; cursor: pointer; margin-right: 5px; font-size: 12px;}
+        .add-btn:hover { background: #00b359; }
+        
+        #errorMsg { color: #ff1744; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div id="imageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;">
+    <img id="modalImg" src="" style="max-width: 90%; max-height: 80vh; border: 2px solid #d4af37; border-radius: 10px;">
+    <button onclick="document.getElementById('imageModal').style.display='none'" style="margin-top: 20px; background: #ff1744; color: white; padding: 10px 30px; border-radius: 5px; cursor: pointer; font-weight: bold; border: none;">CLOSE IMAGE</button>
+</div>
+
+    <div id="securityOverlay">
+        <div class="auth-box">
+            <h2 style="margin-top:0; font-family:'Cinzel',serif;">ADMIN ACCESS</h2>
+            <p style="color:#888; font-size:12px; margin-bottom:15px;">ENTER PASSWORD TO VIEW DATABASE</p>
+            <input type="password" id="adminPass" placeholder="Password">
+            <br>
+            <button onclick="checkAccess()">UNLOCK</button>
+            <p id="errorMsg">ACCESS DENIED</p>
+        </div>
+    </div>
+
+   <div id="mainContent">
+        <div style="text-align: left; margin-bottom: 20px;">
+            <a href="admin.html" style="color: #888; text-decoration: none; font-size: 14px; font-weight: bold; transition: 0.3s;" onmouseover="this.style.color='#d4af37'" onmouseout="this.style.color='#888'">
+                ← BACK TO ADMIN
+            </a>
+        </div>
+
+        <h2>🔔 PENDING REQUESTS</h2>
+        <div class="section-box" style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Player ID</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Details (UPI)</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="requestList">
+                    <tr><td colspan="5" style="text-align:center; color:#666;">No pending requests...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>👥 REGISTERED IDS</h2>
+        
+        <center>
+            <div class="count-badge" id="totalCount">Loading...</div>
+        </center>
+
+        <div class="section-box" id="userList">
+        </div>
+    </div>
+
+    <script>
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuaE-ZsqFLnYUrGNF2VaIeDdzrDA-mVyE",
+            authDomain: "id-spin.firebaseapp.com",
+            databaseURL: "https://id-spin-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "id-spin",
+            storageBucket: "id-spin.firebasestorage.app",
+            messagingSenderId: "968364255642",
+            appId: "1:968364255642:web:216707fa28f7f351927223"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- SECURITY CHECK ---
+        function checkAccess() {
+            const pass = document.getElementById('adminPass').value;
+            const err = document.getElementById('errorMsg');
+            
+            if (pass === 'admin123') {
+                document.getElementById('securityOverlay').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                fetchUserIDs();
+                fetchRequests(); // NEW: Fetch requests on unlock
+            } else {
+                err.style.display = 'block';
+            }
+        }
+
+        // Allow "Enter" key to submit password
+        document.getElementById("adminPass").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                checkAccess();
+            }
+        });
+
+        // --- FIXED: FETCH PENDING REQUESTS ---
+        function fetchRequests() {
+            // Removed the strict orderByChild query to bypass Firebase Indexing blocks
+            db.ref('payment_requests').on('value', snap => {
+                const tbody = document.getElementById('requestList');
+                tbody.innerHTML = '';
+                
+                let hasPending = false;
+                
+                if(snap.exists()) {
+                    snap.forEach(child => {
+                        const req = child.val();
+                        const reqId = child.key;
+                        
+                        // We filter for PENDING requests locally now
+                        if (req.status === 'PENDING') {
+                            hasPending = true;
+                            const isDep = req.type === 'DEPOSIT';
+                            const typeClass = isDep ? 'type-dep' : 'type-with';
+                            const sign = isDep ? '+' : '-';
+
+                            // Inside your fetchRequests() function:
+                            let ssButton = '';
+                            if (req.screenshot) {
+                                ssButton = `<button class="btn-approve" style="background:#29b6f6; margin-right:5px; color:white;" onclick="viewSS('${req.screenshot}')">📷 VIEW SS</button>`;
+                            }
+
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td style="font-family:monospace;">${req.userId}</td>
+                                    <td class="${typeClass}">${req.type}</td>
+                                    <td>${sign}₹${req.amount.toLocaleString()}</td>
+                                    <td style="color:#aaa; font-size:12px;">${req.details}</td>
+                                    <td>
+                                        ${ssButton}
+                                        <button class="btn-approve" onclick="processReq('${reqId}', '${req.userId}', '${req.type}', ${req.amount})">✔ APPROVE</button>
+                                        <button class="btn-reject" onclick="rejectReq('${reqId}')">✖ REJECT</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    });
+                }
+
+                // If no pending requests were found, show the empty message
+                if (!hasPending) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#666;">No pending requests...</td></tr>';
+                }
+            });
+        }
+
+               
+
+        // --- NEW: PROCESS APPROVAL ---
+        function processReq(reqId, userId, type, amount) {
+            if(!confirm(`Approve this ${type} for ₹${amount}?`)) return;
+
+            // 1. Math logic
+            const mathAmount = type === 'DEPOSIT' ? amount : -amount;
+            const desc = type === 'DEPOSIT' ? "Deposit Approved" : "Withdrawal Approved";
+
+            // 2. Update Balance safely
+            db.ref('users/' + userId + '/balance').transaction(currentBal => {
+                let newBal = (currentBal || 0) + mathAmount;
+                // Prevent negative balance on withdrawal
+                return newBal < 0 ? currentBal : newBal; 
+            }, (error, committed, snapshot) => {
+                if (error) {
+                    alert('Transaction failed abnormally!');
+                } else if (!committed) {
+                    alert('Transaction aborted: User might have insufficient funds.');
+                } else {
+                    // 3. Log to Passbook
+                    db.ref('users/' + userId + '/transactions').push({
+                        amount: mathAmount,
+                        balance: snapshot.val(),
+                        description: desc,
+                        date: new Date().toLocaleString()
+                    });
+                    
+                    // 4. Mark Request as Completed
+                    db.ref('payment_requests/' + reqId).update({ status: 'COMPLETED' });
+                    alert(`Successfully processed ${type} of ₹${amount} for ${userId}`);
+                }
+            });
+        }
+
+        // --- NEW: PROCESS REJECT ---
+        function rejectReq(reqId) {
+            if(confirm('Are you sure you want to REJECT this request?')) {
+                db.ref('payment_requests/' + reqId).update({ status: 'REJECTED' });
+            }
+        }
+
+        // --- EXISTING: FETCH USERS ---
+        function fetchUserIDs() {
+            const listEl = document.getElementById('userList');
+            const countEl = document.getElementById('totalCount');
+            
+            listEl.innerHTML = '<div style="padding:20px; text-align:center;">Fetching Data...</div>';
+
+            db.ref('users').on('value', (snapshot) => {
+                listEl.innerHTML = ''; 
+                
+                if (snapshot.exists()) {
+                    const users = snapshot.val();
+                    const ids = Object.keys(users);
+                    
+                    countEl.innerText = `TOTAL USERS: ${ids.length}`;
+
+                    ids.forEach(uid => {
+                        const balance = users[uid].balance || 0;
+                        const row = document.createElement('div');
+                        row.className = 'user-row';
+                        
+                        row.innerHTML = `
+                            <span class="user-id">${uid}</span>
+                            <div style="display:flex; align-items:center;">
+                                <span class="user-bal">₹${balance.toLocaleString()}</span>
+                                <button class="add-btn" onclick="addFunds('${uid}')">+ MANUAL ADD</button>
+                                <button class="copy-btn" onclick="copyToClipboard('${uid}')">COPY</button>
+                            </div>
+                        `;
+                        listEl.appendChild(row);
+                    });
+                } else {
+                    countEl.innerText = "TOTAL USERS: 0";
+                    listEl.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">No users found.</div>';
+                }
+            });
+        }
+        // --- NEW: VIEW SCREENSHOT FUNCTION ---
+        function viewSS(imgData) {
+            document.getElementById('modalImg').src = imgData;
+            document.getElementById('imageModal').style.display = 'flex';
+        }
+
+        // --- EXISTING: COPY UTILITY ---
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("ID Copied: " + text);
+            });
+        }
+
+        // --- EXISTING: ADD FUNDS FUNCTION (Manual override) ---
+        function addFunds(uid) {
+            let amount = prompt(`Enter amount to ADD to ${uid}:`);
+            
+            if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+                const addAmt = parseInt(amount);
+
+                db.ref('users/' + uid + '/balance').transaction((currentBal) => {
+                    return (currentBal || 0) + addAmt;
+                }, (error, committed, snapshot) => {
+                    if (error) {
+                        alert('Transaction failed!');
+                    } else if (!committed) {
+                        alert('Transaction aborted!');
+                    } else {
+                        const newBalance = snapshot.val(); 
+                        
+                        db.ref('users/' + uid + '/transactions').push({
+                            amount: addAmt,          
+                            balance: newBalance,     
+                            description: "Admin Manual Deposit",
+                            date: new Date().toLocaleString()
+                        });
+
+                        alert(`Successfully added ₹${addAmt} to ${uid}`);
+                    }
+                });
+            } else {
+                if(amount !== null) alert("Please enter a valid amount.");
+            }
+        }
+    </script>
+</body>
+</html>

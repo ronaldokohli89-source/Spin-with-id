@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royal Vegas - Member Login</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --gold: #d4af37; --dark: #0a0a0a; }
+        body { 
+            background: var(--dark); color: var(--gold); font-family: 'Roboto', sans-serif; 
+            display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; 
+            background-image: radial-gradient(circle at center, #1b1b1b 0%, #000 100%);
+        }
+        .login-card {
+            background: rgba(20, 20, 20, 0.95); padding: 40px 30px; border-radius: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.3); text-align: center;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8); width: 320px;
+        }
+        h2 { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; color: #fff; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label { font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 1px; margin-left: 2px;}
+        input { 
+            width: 100%; padding: 12px; font-size: 16px; margin-top: 5px; border-radius: 4px; 
+            border: 1px solid #333; background: #111; color: white; box-sizing: border-box; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: var(--gold); }
+        .btn-primary { 
+            width: 100%; padding: 12px; font-size: 14px; font-weight: bold; 
+            background: linear-gradient(135deg, #d4af37, #aa8c2c); border: none; cursor: pointer; border-radius: 4px; 
+            color: black; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(212, 175, 55, 0.2); }
+        .whatsapp-link { display: inline-block; margin-top: 25px; font-size: 12px; color: #666; text-decoration: none; }
+        .whatsapp-link span { color: var(--gold); text-decoration: underline; cursor: pointer; }
+        #error { color: #ff1744; font-size: 12px; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>Member Login</h2>
+        
+        <div class="input-group">
+            <label>Player ID / Mobile</label>
+            <input type="number" id="playerId" placeholder="Enter Mobile Number">
+        </div>
+
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="playerPass" placeholder="Enter Password">
+        </div>
+
+        <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Sign In</button>
+        <p id="error">Invalid Credentials</p>
+
+        <a href="#" class="whatsapp-link" onclick="contactAdmin('911234567890')">
+            Don't have an ID? <span>Sign Up via WhatsApp</span>
+        </a>
+    </div>
+
+    <script>
+        // 1. FIREBASE INIT
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuaE-ZsqFLnYUrGNF2VaIeDdzrDA-mVyE",
+            authDomain: "id-spin.firebaseapp.com",
+            databaseURL: "https://id-spin-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "id-spin",
+            storageBucket: "id-spin.firebasestorage.app",
+            messagingSenderId: "968364255642",
+            appId: "1:968364255642:web:216707fa28f7f351927223"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function handleLogin() {
+            const id = document.getElementById('playerId').value;
+            const pass = document.getElementById('playerPass').value;
+            const error = document.getElementById('error');
+            const btn = document.getElementById('loginBtn');
+
+            if(id.length < 10 || pass.length < 1) {
+                error.innerText = "Please enter valid details";
+                error.style.display = 'block';
+                return;
+            }
+
+            // Visual Feedback
+            btn.innerText = "Verifying...";
+            btn.style.opacity = "0.7";
+            error.style.display = 'none';
+
+            // 2. CHECK DATABASE
+            db.ref('users/' + id).once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    
+                    if (userData.password === pass) {
+                        // SUCCESS: USE SESSION STORAGE
+                        sessionStorage.setItem('royal_user_id', id);
+                        sessionStorage.setItem('vegasSession', 'active');
+                        window.location.href = 'index.html';
+                    } else {
+                        // WRONG PASSWORD
+                        showError("Incorrect Password");
+                    }
+                } else {
+                    // USER NOT FOUND
+                    showError("ID Not Found. Please Sign Up.");
+                }
+            }, (err) => {
+                showError("Connection Error. Try again.");
+            });
+
+            function showError(msg) {
+                error.innerText = msg;
+                error.style.display = 'block';
+                btn.innerText = "Sign In";
+                btn.style.opacity = "1";
+            }
+        }
+
+        function contactAdmin(phone) {
+            const message = encodeURIComponent("I want to create a new Royal Vegas account.");
+            window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+        }
+
+        // Auto-login check (MUST BE SESSION STORAGE)
+        if (sessionStorage.getItem('vegasSession') === 'active') {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

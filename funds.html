@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funds Management</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --gold: #d4af37; --dark: #121212; --panel: #1e1e1e; }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        
+        .header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .back-btn { color: #aaa; text-decoration: none; font-size: 14px; }
+        .back-btn:hover { color: var(--gold); }
+
+        .funds-card { background: var(--panel); width: 100%; max-width: 500px; border-radius: 10px; border: 1px solid #333; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* TABS */
+        .tabs { display: flex; background: #2a2a2a; padding: 10px; gap: 10px; }
+        .tab-btn { flex: 1; padding: 12px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: 0.3s; background: transparent; color: #888; font-size: 16px; }
+        .tab-btn.active { background: linear-gradient(45deg, #d4af37, #f1c40f); color: black; box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3); }
+
+        .tab-content { padding: 20px; display: none; }
+        .tab-content.active { display: block; }
+
+        label { color: var(--gold); font-size: 12px; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; display: block; letter-spacing: 1px; }
+        
+        /* INPUTS */
+        .input-box { background: #111; border: 1px solid #333; border-radius: 5px; padding: 15px; width: 100%; color: white; font-size: 18px; margin-bottom: 20px; box-sizing: border-box; outline: none; }
+        .input-box:focus { border-color: var(--gold); }
+
+        /* PRESET BUTTONS */
+        .preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .preset-btn { background: #222; border: 1px solid #444; color: white; padding: 10px; border-radius: 5px; cursor: pointer; transition: 0.2s; }
+        .preset-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* CHANNEL SELECTION */
+        .channel-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .channel-btn { background: #222; border: 1px solid #444; color: #aaa; padding: 15px; text-align: center; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .channel-btn.selected { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
+
+        .submit-btn { width: 100%; padding: 15px; background: linear-gradient(45deg, #d4af37, #f1c40f); color: black; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4); }
+        .submit-btn:disabled { background: #555; color: #888; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        .wallet-bal { font-size: 32px; font-weight: bold; text-align: right; margin-bottom: 20px; color: #00e676; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="back-btn">← Back to Game</a>
+        <h3 style="margin:0; color:var(--gold);">FUNDS</h3>
+    </div>
+
+    <div class="funds-card">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('deposit')">Deposit</button>
+            <button class="tab-btn" onclick="switchTab('withdraw')">Withdrawal</button>
+        </div>
+
+       <div id="depositTab" class="tab-content active">
+            <label>| Deposit Channel</label>
+            <div class="channel-grid" id="depositChannels">
+                <div class="channel-btn selected" onclick="selectChannel('PhonePe')">PhonePe</div>
+                <div class="channel-btn" onclick="selectChannel('GPay')">G-Pay</div>
+                <div class="channel-btn" onclick="selectChannel('Paytm')">Paytm</div>
+                <div class="channel-btn" onclick="selectChannel('Other UPI')">Other UPI</div>
+            </div>
+
+            <div id="paymentInstructions" style="background: #111; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center; border: 1px dashed var(--gold);">
+                <p style="color: #00e676; font-weight: bold; margin-top: 0; margin-bottom: 10px;">STEP 1: MAKE PAYMENT</p>
+                
+                <div id="phonepe-info">
+                    <p style="color: #aaa; font-size: 14px; margin: 0;">Pay via PhonePe to Number:</p>
+                    <h2 style="color: var(--gold); letter-spacing: 2px; margin: 5px 0;">6291958861</h2>
+                </div>
+                
+                <div id="gpay-info" style="display:none;">
+                    <p style="color: #aaa; font-size: 14px; margin: 0 0 10px 0;">Scan QR via GPay:</p>
+                    <img src="5f24ba63-3c85-4e09-ac2b-ada6788fc057.jpg" alt="GPay QR" style="max-width: 180px; border-radius: 8px; border: 2px solid #fff;">
+                    <p style="color: #888; font-size: 12px; margin-top: 10px;">UPI ID: rupamsaha8100@oksbi</p>
+                </div>
+                
+                <div id="other-info" style="display:none;">
+                    <p style="color: #aaa; font-size: 14px; margin: 0;">Pay to UPI ID:</p>
+                    <h3 style="color: var(--gold); margin: 5px 0;">rupamsaha8100@oksbi</h3>
+                </div>
+            </div>
+
+            <label>| STEP 2: UPLOAD SCREENSHOT</label>
+            <input type="file" id="paymentSS" class="input-box" accept="image/*" style="padding: 10px; font-size: 14px;">
+
+            <label>| STEP 3: AMOUNT</label>
+            <div class="preset-grid">
+                <button class="preset-btn" onclick="setAmt('depAmt', 500)">500</button>
+                <button class="preset-btn" onclick="setAmt('depAmt', 1000)">1,000</button>
+                <button class="preset-btn" onclick="setAmt('depAmt', 2000)">2,000</button>
+                <button class="preset-btn" onclick="setAmt('depAmt', 5000)">5,000</button>
+            </div>
+            <input type="number" id="depAmt" class="input-box" placeholder="₹ 0.00">
+
+            <button class="submit-btn" onclick="submitRequest('DEPOSIT', this)">Submit Deposit</button>
+       
+        </div>
+
+        <div id="withdrawTab" class="tab-content">
+            <label>| Main Wallet Balance</label>
+            <div class="wallet-bal" id="liveBal">₹0</div>
+
+            <label>| Withdrawal Amount</label>
+            <input type="number" id="withAmt" class="input-box" placeholder="₹ 0.00">
+
+            <label>| Transfer To (UPI ID / Number)</label>
+            <input type="text" id="withDetails" class="input-box" placeholder="e.g. 9876543210@ybl">
+
+            <button class="submit-btn" onclick="submitRequest('WITHDRAW', this)">Request Withdrawal</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. FIREBASE SETUP
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuaE-ZsqFLnYUrGNF2VaIeDdzrDA-mVyE",
+            authDomain: "id-spin.firebaseapp.com",
+            databaseURL: "https://id-spin-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "id-spin",
+            storageBucket: "id-spin.firebasestorage.app",
+            messagingSenderId: "968364255642",
+            appId: "1:968364255642:web:216707fa28f7f351927223"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 2. AUTH & LIVE BALANCE
+        const clientID = sessionStorage.getItem('royal_user_id');
+        if (!clientID) {
+            alert("No session found! Please login.");
+            window.location.href = 'login.html';
+        }
+
+        let currentBalance = 0;
+        db.ref('users/' + clientID + '/balance').on('value', snap => {
+            currentBalance = snap.val() || 0;
+            document.getElementById('liveBal').innerText = '₹' + currentBalance.toLocaleString();
+        });
+
+        // 3. UI LOGIC
+        let selectedChannel = 'PhonePe';
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if(tab === 'deposit') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('depositTab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('withdrawTab').classList.add('active');
+            }
+        }
+
+        
+
+        function setAmt(inputId, val) {
+            document.getElementById(inputId).value = val;
+        }
+
+        function selectChannel(name) {
+            selectedChannel = name;
+            document.querySelectorAll('.channel-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if(btn.innerText === name) btn.classList.add('selected');
+            });
+
+            // Toggle Payment Info UI
+            document.getElementById('phonepe-info').style.display = 'none';
+            document.getElementById('gpay-info').style.display = 'none';
+            document.getElementById('other-info').style.display = 'none';
+
+            if (name === 'PhonePe') document.getElementById('phonepe-info').style.display = 'block';
+            else if (name === 'GPay') document.getElementById('gpay-info').style.display = 'block';
+            else document.getElementById('other-info').style.display = 'block';
+        }
+
+        function submitRequest(type, btnElement) {
+            let amount, details;
+            let base64Image = null; // To hold the screenshot data
+
+            if (type === 'DEPOSIT') {
+                amount = parseInt(document.getElementById('depAmt').value);
+                details = "Via " + selectedChannel;
+                
+                if (isNaN(amount) || amount < 100) {
+                    alert("Minimum deposit is ₹100");
+                    return;
+                }
+
+                // Check for screenshot
+                const file = document.getElementById('paymentSS').files[0];
+                if (!file) {
+                    alert("Please upload a payment screenshot to proceed.");
+                    return;
+                }
+
+                // Read the image file
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    base64Image = e.target.result;
+                    processFirebasePush(); // Push after reading image
+                };
+                reader.readAsDataURL(file);
+                
+            } else { // WITHDRAWAL LOGIC
+                amount = parseInt(document.getElementById('withAmt').value);
+                details = document.getElementById('withDetails').value.trim();
+                
+                if (isNaN(amount) || amount < 100) {
+                    alert("Minimum withdrawal is ₹100");
+                    return;
+                }
+                if (amount > currentBalance) {
+                    alert("Insufficient Balance! Your current balance is ₹" + currentBalance);
+                    return;
+                }
+                if (!details) {
+                    alert("Please provide UPI ID or Number");
+                    return;
+                }
+                processFirebasePush(); // Push immediately for withdrawals
+            }
+
+            // Centralized push function
+            function processFirebasePush() {
+                const originalText = btnElement.innerText;
+                btnElement.innerText = "Sending...";
+                btnElement.disabled = true;
+
+                db.ref('payment_requests').push({
+                    userId: clientID,
+                    type: type,
+                    amount: amount,
+                    details: details,
+                    screenshot: base64Image, // Will be null for withdrawals, Base64 for deposits
+                    status: "PENDING",
+                    timestamp: new Date().toLocaleString()
+                }).then(() => {
+                    alert(`✅ ${type} Request Sent to Admin!\nAmount: ₹${amount}`);
+                    document.getElementById('depAmt').value = '';
+                    document.getElementById('withAmt').value = '';
+                    document.getElementById('withDetails').value = '';
+                    if(document.getElementById('paymentSS')) document.getElementById('paymentSS').value = '';
+                    
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                }).catch((error) => {
+                    alert("❌ Database Error: " + error.message);
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                });
+            }
+        }
+                
+                
+    </script>
+</body>
+</html>

@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royal Vegas 12 - Midnight Edition</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Orbitron:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <style>
+        :root {
+            /* THEME: Midnight Blue & Gold */
+            --bg-gradient: radial-gradient(circle at 50% -20%, #0f2027 0%, #203a43 50%, #2c5364 100%); /* Deep Midnight */
+            --glass-panel: rgba(10, 25, 40, 0.85); /* Blue-tinted glass */
+            --border-neon: 1px solid rgba(0, 243, 255, 0.3); /* Cyan subtle border */
+            --text-gold: #ffd700;
+            --text-cyan: #00f3ff;
+            --felt-blue: #002b5e; /* Royal Blue Felt */
+            --shadow-soft: 0 10px 40px rgba(0,0,0,0.6);
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            background: #000; /* Fallback */
+            background-image: var(--bg-gradient);
+            color: white; font-family: 'Roboto', sans-serif;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* --- TOP BAR (Grid for Perfect Centering) --- */
+        .top-bar { 
+            height: 70px; 
+            display: grid; 
+            grid-template-columns: 1fr auto 1fr; /* Left, Center, Right */
+            align-items: center; 
+            padding: 0 30px; 
+            background: rgba(0, 10, 20, 0.9); 
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        
+        .top-left { display: flex; align-items: center; gap: 20px; }
+        .top-right { display: flex; justify-content: flex-end; align-items: center;
+         }
+
+        .logo-text {
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        /* TIMER */
+        .timer-box { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 36px; 
+            color: #00f3ff; /* Neon Cyan */
+            text-shadow: 0 0 15px rgba(0, 243, 255, 0.6);
+            background: rgba(0,0,0,0.5); 
+            padding: 2px 30px; 
+            border-radius: 4px; 
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            letter-spacing: 2px;
+        }
+        
+        /* VOLUME BOX */
+        .vol-box { 
+            text-align: right; 
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05)); 
+            padding: 5px 20px; 
+            border-right: 3px solid var(--text-gold); 
+            cursor: pointer; 
+            transition: 0.3s;
+        }
+        .vol-box:hover { background: rgba(255,255,255,0.1); }
+        .vol-box small { color: #888; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+        .vol-box span { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: bold; }
+        
+        .vol-positive { color: #00e676; text-shadow: 0 0 10px rgba(0, 230, 118, 0.4); }
+        .vol-negative { color: #ff1744; text-shadow: 0 0 10px rgba(255, 23, 68, 0.4); }
+
+        /* --- MAIN LAYOUT (CSS GRID for Perfect Alignment) --- */
+        .game-hud { 
+    flex: 1; 
+    display: grid; 
+    grid-template-columns: 320px 1fr 320px; 
+    gap: 20px; 
+    padding: 20px; 
+    height: calc(100vh - 70px); 
+    align-items: stretch;   /* 👈 ADD THIS */
+}
+
+        
+        /* PANEL STYLES */
+        .panel {
+            background: var(--glass-panel);
+            backdrop-filter: blur(12px);
+            border: var(--border-neon);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--shadow-soft);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        .center-panel { 
+    background: transparent; 
+    border: none; 
+    box-shadow: none; 
+    backdrop-filter: none;
+    position: relative;
+
+    display: flex;              /* 👈 ADD */
+    flex-direction: column;     /* 👈 ADD */
+    align-items: center;        /* 👈 ADD */
+    justify-content: center;    /* 👈 ADD */
+    height: 100%;               /* 👈 ADD */
+}
+
+
+        /* --- BETTING GRID (Royal Blue Felt) --- */
+        .grid-12 { 
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; 
+            width: 100%; margin-bottom: 20px; padding: 12px; 
+            background-color: var(--felt-blue);
+            background-image: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.4) 100%);
+            border-radius: 12px; 
+            border: 6px solid #1a2a3a; 
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        
+        .grid-12.locked { filter: grayscale(100%) brightness(0.7); pointer-events: none; }
+
+        .num-btn { 
+            aspect-ratio: 1; 
+            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.4)); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 6px; 
+            color: #fff; font-family: 'Cinzel', serif; font-size: 22px; font-weight: bold;
+            cursor: pointer; transition: all 0.15s; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+        }
+        .num-btn:hover { background: rgba(0, 243, 255, 0.2); border-color: var(--text-cyan); transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0,0,0,0.3), 0 0 15px var(--text-cyan); }
+        .num-btn:active { transform: translateY(2px); box-shadow: none; }
+
+        /* --- CHIPS --- */
+        .chip-rack { 
+            display: flex; justify-content: space-around; 
+            background: rgba(0,0,0,0.4); padding: 15px; border-radius: 50px; 
+            border: 1px solid rgba(255,255,255,0.1); margin-top: auto;
+        }
+        .chip { 
+            width: 50px; height: 50px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-family: 'Roboto', sans-serif; font-size: 13px; 
+            cursor: pointer; border: 3px dashed rgba(255,255,255,0.5); 
+            box-shadow: 0 3px 5px rgba(0,0,0,0.5); 
+            transition: 0.2s; 
+        }
+        .chip:hover { transform: translateY(-5px); }
+        .chip.active { 
+            border-style: solid; border-color: #fff; 
+            box-shadow: 0 0 15px #fff, 0 0 30px var(--text-cyan); 
+            transform: scale(1.2) translateY(-10px); z-index: 2; 
+        }
+        .c10 { background: radial-gradient(#00c6ff, #0072ff); } 
+        .c20 { background: radial-gradient(#ff416c, #ff4b2b); } 
+        .c50 { background: radial-gradient(#56ab2f, #a8e063); color: black; } 
+        .c100 { background: radial-gradient(#141e30, #243b55); border-color: var(--text-gold); color: var(--text-gold); }
+
+        /* --- WHEEL AREA (Centered in Grid) --- */
+        .wheel-container { 
+            position: relative; 
+            width: 500px; height: 500px; 
+            border-radius: 50%; 
+            padding: 10px;
+            /* Gold/Bronze Ring */
+            background: conic-gradient(from 0deg, #895e1a, #f2c058, #895e1a, #f2c058, #895e1a);
+            box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 20px rgba(242, 192, 88, 0.4); 
+            transition: transform 0.3s;
+        }
+        .wheel-inner {
+            width: 100%; height: 100%; border-radius: 50%;
+            border: 12px solid #000; 
+            background: #000;
+            overflow: hidden;
+            position: relative;
+        }
+        canvas { width: 100%; height: 100%; }
+        
+        #pointer { 
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%); 
+            width: 0; height: 0; 
+            border-left: 20px solid transparent; border-right: 20px solid transparent; 
+            border-top: 55px solid #ff1744; 
+            filter: drop-shadow(0 0 10px #ff1744); 
+            z-index: 5; 
+        }
+
+        /* --- STATUS --- */
+        .status-msg { 
+            margin-top: 30px; font-family: 'Cinzel', serif; 
+            font-size: 28px; font-weight: bold; letter-spacing: 4px; 
+            text-align: center; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+        .status-msg.locked-msg { color: #ff1744; text-shadow: 0 0 20px #ff1744; }
+
+        .history-bar { margin-top: 20px; display: flex; gap: 8px; justify-content: center; height: 40px; }
+        .hist-bubble { 
+            width: 36px; height: 36px; border-radius: 50%; 
+            background: #111; 
+            border: 1px solid var(--text-gold); 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; color: var(--text-gold); 
+            box-shadow: 0 0 5px rgba(255, 215, 0, 0.3); 
+            font-size: 14px; 
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- SLIP & TABLES --- */
+        .slip-header { 
+            text-align: center; color: var(--text-cyan); font-family: 'Cinzel', serif; 
+            font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); 
+            padding-bottom: 15px; margin-bottom: 10px; letter-spacing: 2px;
+        }
+        .slip-content { flex: 1; overflow-y: auto; padding-right: 5px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { font-size: 10px; color: #666; text-align: left; padding-bottom: 8px; letter-spacing: 1px; }
+        td { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+        .num-cell { color: #fff; font-weight: bold; }
+        
+        .btn-cancel { 
+            background: transparent; border: 1px solid #ff1744; color: #ff1744; 
+            border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; transition: 0.2s; 
+        }
+        .btn-cancel:hover { background: #ff1744; color: white; }
+        
+        .total-row { 
+            margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2); 
+            font-size: 20px; color: var(--text-gold); font-family: 'Cinzel', serif; 
+            display: flex; justify-content: space-between; 
+        }
+        
+        .win-box { 
+            text-align: center; font-size: 26px; margin: 15px 0; min-height: 40px; 
+            color: #00e676; text-shadow: 0 0 20px #00e676; 
+            font-family: 'Orbitron', sans-serif; font-weight: bold; opacity: 0; transition: opacity 0.5s; 
+        }
+        .win-box.show { opacity: 1; animation: pulse 0.5s infinite alternate; }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+        .btn-print { 
+            width: 100%; padding: 15px; font-size: 16px; font-weight: bold; 
+            text-transform: uppercase; letter-spacing: 2px;
+            background: linear-gradient(45deg, #ffd700, #ffb300); 
+            border: none; border-radius: 6px; cursor: pointer; color: #000; 
+            box-shadow: 0 5px 15px rgba(255, 179, 0, 0.3); transition: 0.3s; 
+        }
+        .btn-print:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); color: white; }
+
+        #coinCanvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 999; }
+        
+        .admin-trigger { 
+            position: fixed; bottom: 15px; right: 15px; font-size: 24px; 
+            text-decoration: none; z-index: 1000; cursor: pointer; opacity: 0.2; transition: 0.3s; 
+        }
+        .admin-trigger:hover { opacity: 1; transform: scale(1.1); }
+
+        .logout-btn { 
+            background: transparent; color: #666; 
+            border: 1px solid #333; padding: 6px 12px; cursor: pointer; 
+            border-radius: 4px; font-size: 11px; letter-spacing: 1px; transition: 0.3s; 
+        }
+        /* NEW CONTACT BUTTON STYLE */
+        .contact-btn { 
+            background: transparent; 
+            color: #00f3ff; /* Neon Cyan to stand out */
+            border: 1px solid #00f3ff; 
+            padding: 6px 12px; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-size: 11px; 
+            letter-spacing: 1px; 
+            text-decoration: none; /* Removes underline from link */
+            transition: 0.3s; 
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            font-family: 'Roboto', sans-serif;
+        }
+        .contact-btn:hover { 
+            background: rgba(0, 243, 255, 0.1); 
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.4);
+        }
+        .logout-btn:hover { border-color: #ff1744; color: #ff1744; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 1400px), (max-height: 850px) {
+            .wheel-container { width: 400px; height: 400px; }
+            .grid-12 { gap: 8px; padding: 10px; }
+            .num-btn { font-size: 20px; }
+            .chip { width: 40px; height: 40px; font-size: 11px; }
+            .game-hud { grid-template-columns: 280px 1fr 280px; gap: 15px; }
+        }
+
+        @media (max-width: 900px) {
+            body { height: auto; overflow-y: auto; display: block; }
+            .top-bar { display: flex; justify-content: space-between; position: sticky; top: 0; }
+            .game-hud { display: flex; flex-direction: column; height: auto; padding-bottom: 50px; }
+            .panel { height: auto; max-width: 100%; }
+            .center-panel { order: 1; width: 100%; padding: 20px 0; }
+            .left-panel { order: 2; width: 100%; }
+            .right-panel { order: 3; width: 100%; }
+            .wheel-container { width: 280px; height: 280px; }
+            #pointer { top: -20px; border-width: 0 15px 35px 15px; }
+            .grid-12 { gap: 10px; }
+            .num-btn { padding: 20px 0; }
+        }
+
+       /* =========================================
+   🖨️ THERMAL PRINTER STYLES (3 Inch / 80mm)
+   ========================================= */
+@media print {
+    @page { 
+        margin: 0; 
+        size: 80mm auto; /* Forces 80mm width paper */
+    }
+
+    body { 
+        width: 78mm; /* Slightly less than 80mm to prevent cutoff */
+        background: white !important; 
+        color: black !important; 
+        margin: 0 auto; 
+        padding: 5px; 
+        font-family: 'Courier New', monospace; /* Receipt font */
+        font-size: 12px;
+        display: block !important; 
+        height: auto !important; 
+        overflow: visible !important;
+    }
+
+    /* HIDE GAME INTERFACE */
+    .top-bar, .left-panel, .center-panel, .admin-trigger, .logout-btn, 
+    #coinCanvas, .win-box, .fullscreen-btn, .chip-rack, .grid-12, #timer, 
+    .slip-header, .btn-print, .vol-box, .logo-text, #securityOverlay { 
+        display: none !important; 
+    }
+
+    /* HIDE ACTION COLUMN (X Buttons) */
+    .no-print, th:nth-child(3), td:nth-child(3) {
+        display: none !important;
+    }
+
+    /* SHOW RECEIPT HEADER/FOOTER */
+    .print-header, .print-footer { display: block !important; text-align: center; }
+    
+    .print-logo { font-size: 18px; font-weight: bold; border-bottom: 2px dashed #000; padding-bottom: 5px; margin-bottom: 5px; }
+    .print-meta { font-size: 10px; margin-bottom: 10px; }
+    .print-footer { margin-top: 15px; border-top: 1px dashed #000; padding-top: 5px; font-size: 10px; }
+
+    /* RESET CONTAINER STYLES */
+    .game-hud, .panel, .slip-panel { 
+        display: block !important; 
+        width: 100% !important; 
+        height: auto !important; 
+        border: none !important; 
+        box-shadow: none !important; 
+        margin: 0 !important; 
+        padding: 0 !important;
+        background: transparent !important;
+        grid-template-columns: 1fr !important; /* Remove Grid */
+    }
+
+    /* TABLE STYLES */
+    .slip-content { overflow: visible !important; height: auto !important; }
+    table { width: 100%; border-collapse: collapse; }
+    
+    th { 
+        border-bottom: 1px solid #000 !important; 
+        color: #000 !important; 
+        font-size: 10px; 
+        text-align: left;
+    }
+    
+    td { 
+        border-bottom: 1px dashed #666 !important; 
+        padding: 4px 0; 
+        font-size: 14px; 
+        font-weight: bold;
+        color: #000 !important; 
+    }
+
+    /* Alignment */
+    th:nth-child(2), td:nth-child(2) { text-align: right; } /* Amount Right Align */
+
+    /* TOTAL ROW */
+    .total-row { 
+        border-top: 2px solid #000 !important; 
+        color: #000 !important; 
+        font-weight: bold; 
+        font-size: 18px; 
+        margin-top: 10px;
+        padding-top: 10px;
+        display: flex; 
+        justify-content: space-between;
+    }
+}
+
+/* HIDE PRINT ELEMENTS ON SCREEN */
+.print-header, .print-footer { display: none; }
+       .game-hud {
+    align-items: stretch;
+}
+
+.center-panel {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+/* =======================
+   MOBILE OPTIMIZATION
+======================= */
+@media (max-width: 768px) {
+
+    body {
+        overflow-y: auto;
+        height: auto;
+    }
+
+    .top-bar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        padding: 0 12px;
+        height: 60px;
+    }
+
+    .logo-text {
+        font-size: 16px;
+    }
+
+    .timer-box {
+        font-size: 22px;
+        padding: 2px 14px;
+    }
+
+    .game-hud {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 10px;
+        height: auto;
+    }
+
+    .left-panel, .right-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .center-panel {
+        order: 1;
+        padding: 10px 0;
+    }
+
+    .left-panel {
+        order: 2;
+    }
+
+    .right-panel {
+        order: 3;
+    }
+
+    /* 🎯 Wheel resize */
+    .wheel-container {
+        width: 260px;
+        height: 260px;
+    }
+
+    #pointer {
+        top: -18px;
+        border-left: 14px solid transparent;
+        border-right: 14px solid transparent;
+        border-top: 32px solid #ff1744;
+    }
+
+    /* 🎯 Betting grid */
+    .grid-12 {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .num-btn {
+        font-size: 18px;
+        padding: 16px 0;
+    }
+
+    /* 🎯 Chips */
+    .chip-rack {
+        padding: 10px;
+    }
+
+    .chip {
+        width: 42px;
+        height: 42px;
+        font-size: 12px;
+    }
+
+    /* 🎯 Slip */
+    .slip-header {
+        font-size: 14px;
+    }
+
+    .total-row {
+        font-size: 16px;
+    }
+
+    .btn-print {
+        font-size: 14px;
+        padding: 12px;
+    }
+
+    .status-msg {
+        font-size: 18px;
+        letter-spacing: 2px;
+        margin-top: 15px;
+    }
+
+    .history-bar {
+        height: 32px;
+        margin-top: 10px;
+    }
+
+    .hist-bubble {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
+
+    .admin-trigger {
+        bottom: 10px;
+        right: 10px;
+        font-size: 20px;
+    }
+}
+/* NEW: ADD MONEY BUTTON */
+        .add-money-btn {
+            background: linear-gradient(45deg, #00e676, #00b359);
+            color: black;
+            border: none;
+            padding: 8px 15px;
+            margin-right: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 230, 118, 0.4);
+            transition: 0.3s;
+            font-family: 'Roboto', sans-serif;
+            letter-spacing: 1px;
+        }
+        .add-money-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 230, 118, 0.8);
+        }
+/* Add this inside your <style> tag */
+.fullscreen-btn {
+    /* Removed 'fixed' position so it sits under the queue */
+    margin-top: 20px;
+    background: transparent;
+    border: 1px solid rgba(255, 215, 0, 0.3); /* Subtle Gold */
+    color: #666;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+    text-transform: uppercase;
+}
+
+.fullscreen-btn:hover {
+    border-color: #d4af37;
+    color: #d4af37;
+    background: rgba(255, 215, 0, 0.05);
+    transform: translateY(-2px);
+}
+/* SECURITY OVERLAY */
+#securityOverlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #000; z-index: 10000;
+    display: flex; flex-direction: column; 
+    justify-content: center; align-items: center;
+}
+#gamePass {
+    padding: 15px; font-size: 18px; text-align: center; 
+    border: 1px solid #d4af37; background: #111; color: white; border-radius: 5px;
+}
+#enterBtn {
+    margin-top: 15px; padding: 12px 30px; font-size: 16px; font-weight: bold;
+    background: #d4af37; border: none; cursor: pointer; border-radius: 5px;
+}
+
+    </style>
+</head>
+<body>
+    <script>
+    // 1. DISABLE RIGHT-CLICK
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+
+    // 2. DISABLE KEYBOARD SHORTCUTS (F12, Ctrl+Shift+I, Ctrl+U, etc.)
+    document.onkeydown = function(e) {
+        if (event.keyCode == 123) { // F12
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { // Ctrl+Shift+I
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { // Ctrl+Shift+C
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { // Ctrl+Shift+J
+            return false;
+        }
+        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { // Ctrl+U (View Source)
+            return false;
+        }
+    }
+
+    // 3. DEBUGGER TRAP (Freezes browser if DevTools is opened)
+    setInterval(function() {
+        // This will pause execution if the user opens the console
+        (function(){debugger;})(); 
+    }, 100);
+</script>
+    
+
+    <canvas id="coinCanvas"></canvas>
+
+    <div class="top-bar">
+        <div class="top-left">
+            <button class="logout-btn" onclick="logout()">EXIT</button>
+            <div class="logo-text">ROYAL VEGAS 12</div>
+        </div>
+
+        <div class="timer-box" id="timer">03:00</div>
+        
+      <div class="top-right">
+            <button class="add-money-btn" onclick="window.location.href='funds.html'">+ ADD MONEY</button>
+            
+            <div class="vol-box" onclick="window.location.href='passbook.html'">
+                <small>WALLET BALANCE</small> <br>
+                <span id="volDisplay">Loading...</span>
+            </div>
+        </div>
+    </div>
+    <button id="fsBtn" class="fullscreen-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
+
+
+    <div class="game-hud">
+        <div class="panel left-panel">
+            <div class="grid-12" id="grid"></div>
+            
+            <div class="chip-rack">
+                <div class="chip c10" onclick="setChip(10, this)">10</div>
+                <div class="chip c20" onclick="setChip(20, this)">20</div>
+                <div class="chip c50" onclick="setChip(50, this)">50</div>
+                <div class="chip c100" onclick="setChip(100, this)">100</div>
+            </div>
+            <p style="margin-top:15px; color:#666; font-size:10px; text-align:center; text-transform:uppercase; letter-spacing:1px;">Select Chip & Place Bet</p>
+        </div>
+
+        <div class="center-panel">
+    <div class="wheel-container">
+        <div class="wheel-inner">
+            <div id="pointer"></div>
+            <canvas id="wheel"></canvas>
+        </div>
+    </div>
+    <div class="status-msg" id="msg">PLACE YOUR BETS</div>
+    <div class="history-bar" id="historyBar"></div>
+    
+    <button id="fsBtn" class="fullscreen-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
+</div>
+<div class="panel right-panel slip-panel">
+    
+    <div class="print-header">
+        <div class="print-logo">ROYAL VEGAS 12</div>
+        <div class="print-meta" id="printMeta">DATE: --/--/----</div>
+    </div>
+
+    <h3 class="slip-header">BETTING SLIP</h3>
+    
+    <div class="slip-content">
+        <table>
+            <thead>
+                <tr>
+                    <th>NUMBER</th>
+                    <th style="text-align:center">BET</th>
+                    <th style="text-align:right" class="no-print">ACTION</th> </tr>
+            </thead>
+            <tbody id="slipBody"></tbody>
+        </table>
+    </div>
+    
+    <div class="total-row">
+        <span>TOTAL</span>
+        <span>₹<span id="totalDisplay">0</span></span>
+    </div>
+    
+    <div class="win-box" id="winDisplay"></div>
+
+    <div class="print-footer">
+        TERM ID: <span id="printID">---</span><br>
+        KEEP TICKET FOR PAYOUT
+    </div>
+
+    <button class="btn-print" onclick="printAndClear()">PRINT TICKET</button>
+</div>
+    </div>
+
+    <div class="top-left">
+            <button class="logout-btn" onclick="logout()">EXIT</button>
+            
+            <a href="admin.html" class="contact-btn">
+                📞 CONTACT
+            </a>
+            
+            <div class="logo-text">ROYAL VEGAS 12</div>
+        </div>
+
+   <script>
+     
+    // --- 1. FIREBASE SETUP ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyAuaE-ZsqFLnYUrGNF2VaIeDdzrDA-mVyE",
+        authDomain: "id-spin.firebaseapp.com",
+        databaseURL: "https://id-spin-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "id-spin",
+        storageBucket: "id-spin.firebasestorage.app",
+        messagingSenderId: "968364255642",
+        appId: "1:968364255642:web:216707fa28f7f351927223"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // --- 2. CORRECTED AUTH GUARD (Use sessionStorage) ---
+    // This checks the temporary session. If it's missing, go to login.
+    if (sessionStorage.getItem('vegasSession') !== 'active') {
+        window.location.href = 'login.html';
+    }
+
+    // --- 3. CORRECTED LOGOUT FUNCTION ---
+    function logout() {
+        // Clear the session
+        sessionStorage.removeItem('vegasSession');
+        sessionStorage.removeItem('royal_user_id'); // Clear user ID too
+        
+        // Force redirect to login page immediately
+        window.location.replace("login.html");
+    }
+
+    // ... (Rest of your game code below remains the same) ...
+
+        // --- GLOBAL VARIABLES ---
+        let currentRotation = 0;   // Tracks total wheel rotation to prevent rewinding
+        let visualCleanupTimer = null; // Stores the 2-minute timer ID
+        
+        // --- 🆕 MIDNIGHT RESET LOGIC (LOCAL STORAGE) ---
+        function checkLocalMidnight() {
+            // 1. Get Current Date in India Time
+            const now = new Date();
+            const formatter = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                year: 'numeric', month: 'numeric', day: 'numeric'
+            });
+            const todayStr = formatter.format(now); // e.g., "25/01/2026"
+            
+            // 2. Compare with Last Saved Date
+            const lastReset = localStorage.getItem('vegas_last_reset_date');
+            
+            if (lastReset !== todayStr) {
+                console.log("🌙 Midnight Detected (Client): Resetting Local Volume");
+                
+                // 3. Reset Balance & Transactions
+                localStorage.setItem('vegas_balance', '0'); 
+                localStorage.setItem('vegas_txns', '[]'); 
+                
+                // 4. Update Date
+                localStorage.setItem('vegas_last_reset_date', todayStr);
+                
+                // 5. Refresh Display immediately if it exists
+                if(typeof updateLocalDisplay === 'function') updateLocalDisplay();
+            }
+        }
+        // Run immediately on load
+        checkLocalMidnight();
+        // Run every 60 seconds (so it resets automatically while the game is open)
+        setInterval(checkLocalMidnight, 60000);
+        
+        
+     // IDENTIFY PLAYER (Use the Phone Number from Login)
+      let clientID = sessionStorage.getItem('royal_user_id'); // <-- CHANGED HERE
+      if(!clientID) {
+          clientID = 'Guest-' + Math.floor(Math.random() * 1000);
+      }
+      console.log("Player Logged In As: " + clientID); // <-- Added so you can verify
+
+        function logout() {
+            sessionStorage.removeItem('vegasSession');
+            window.location.reload(); // <--- Add this (Restarts game)
+        }
+
+        // --- 3. UI & GRAPHICS ---
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const jCanvas = document.getElementById('coinCanvas');
+        const jCtx = jCanvas.getContext('2d');
+        const sectors = 12;
+        const arc = (Math.PI * 2) / sectors;
+
+       // --- 4. DATA & STATE ---
+        // NEW: Pull bets from memory so they survive page refreshes!
+        let bets = JSON.parse(localStorage.getItem('vegas_active_bets') || '{}'); 
+        let cycleBets = JSON.parse(localStorage.getItem('vegas_cycle_bets') || '{}');
+        let activeChip = 0;
+        let betsLocked = false;
+        let isSpinning = false;
+        let lastServerStatus = "";
+
+        // 🟢 NEW: GLOBAL WALLET VARIABLE
+        let liveBalance = 0; 
+
+        // 🟢 NEW: SYNC BALANCE FROM FIREBASE (Realtime)
+        // This ensures the game always shows the money added by Admin in ids.html
+        if (clientID) {
+            db.ref('users/' + clientID + '/balance').on('value', (snapshot) => {
+                liveBalance = snapshot.val() || 0;
+                
+                // Update UI
+                const el = document.getElementById('volDisplay');
+                el.innerText = '₹' + liveBalance.toLocaleString();
+                
+                // Update Color
+                if (liveBalance > 0) el.parentElement.classList.add('vol-positive');
+                else el.parentElement.classList.remove('vol-positive');
+            });
+        }
+        
+        // --- 5. CENTRALIZED SERVER SYNCHRONIZATION ---
+        db.ref('game_state').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if(!data) return;
+
+            // A. Update Timer
+            let seconds = data.time_left;
+            let m = Math.floor(seconds / 60).toString().padStart(2,'0');
+            let s = (seconds % 60).toString().padStart(2,'0');
+            document.getElementById('timer').innerText = `${m}:${s}`;
+
+           // B. Unlock/Lock based on Timer (10s Buffer)
+            if (data.status === "BETTING") {
+                if (data.time_left > 10) {
+                    // Open bets if we have more than 10 seconds
+                    if (betsLocked && !isSpinning) unlockBets(); 
+                } else {
+                    // Lock bets if 10 seconds or less remain
+                    if (!betsLocked) {
+                        lockBets();
+                        document.getElementById('msg').innerText = "BETS CLOSED";
+                    }
+                }
+            }
+            // C. Handle Locking
+            if(data.status === "SPINNING") {
+                if (!isSpinning && !document.getElementById('grid').classList.contains('locked')) {
+                    lockBets();
+                    document.getElementById('msg').innerText = "SPIN IN PROGRESS...";
+                }
+            }
+
+            // D. Trigger Spin
+            if(data.status === "SPINNING" && lastServerStatus === "BETTING") {
+                performSpin(data.result, data.multiplier);
+            }
+
+            lastServerStatus = data.status;
+        });
+
+       
+
+      
+        // --- 7. TRANSACTION & LOGGING LOGIC ---
+      // --- 7. BETTING LOGIC & TRANSACTIONS ---
+        function logTransaction(description, amount) {
+            // 1. UPDATE LOCAL DISPLAY (House Perspective)
+            let txns = JSON.parse(localStorage.getItem('vegas_txns') || '[]');
+            let currentLocalBal = parseFloat(localStorage.getItem('vegas_balance') || '0');
+            let newBalance = currentLocalBal + amount; 
+            
+            localStorage.setItem('vegas_balance', newBalance);
+            txns.unshift({ date: new Date().toLocaleString(), description, amount, balance: newBalance });
+            if(txns.length > 50) txns.pop();
+            localStorage.setItem('vegas_txns', JSON.stringify(txns));
+            
+            // 2. UPDATE GLOBAL VOLUME (Firebase)
+            if (description.includes("Bet Received")) {
+                 db.ref('house_stats/daily_volume').transaction((currentVol) => {
+                    return (currentVol || 0) + Math.abs(amount); 
+                });
+            } 
+            else if (description.includes("Bet Cancelled")) {
+                 db.ref('house_stats/daily_volume').transaction((currentVol) => {
+                    return (currentVol || 0) - Math.abs(amount); 
+                });
+            }
+        }
+
+      // 🟢 NEW: STRICT MATH MONEY HANDLER
+        function updateWallet(amount, description) {
+            if(!clientID) return;
+            const numAmt = parseFloat(amount); // Force strict number
+
+            // 1. Update Balance in Database
+            db.ref('users/' + clientID + '/balance').transaction((currentBal) => {
+                return parseFloat(currentBal || 0) + numAmt; // Prevents string bugs
+            }, (error, committed, snapshot) => {
+                if (error) {
+                    console.error("Wallet Error:", error);
+                } else if (committed) {
+                    // 2. Add to History (Passbook)
+                    db.ref('users/' + clientID + '/transactions').push({
+                        amount: numAmt,
+                        balance: snapshot.val(),
+                        description: description,
+                        date: new Date().toLocaleString()
+                    });
+                    
+                    // 3. Update House Stats (Global Volume)
+                    if (numAmt < 0) {
+                        db.ref('house_stats/daily_volume').transaction(vol => parseFloat(vol || 0) + Math.abs(numAmt));
+                    }
+                }
+            });
+        }
+         
+               
+
+        function saveStorage() {
+            localStorage.setItem('vegas_active_bets', JSON.stringify(bets));
+            localStorage.setItem('vegas_cycle_bets', JSON.stringify(cycleBets));
+            db.ref(`current_round_bets/${clientID}`).set(cycleBets);
+        }
+
+       // GENERATE GRID
+const grid = document.getElementById('grid');
+for(let i=1; i<=12; i++) {
+    // 1. Create the button element
+    let btn = document.createElement('button');
+    btn.className = 'num-btn';
+    btn.innerText = i;
+    
+    // 2. Attach the click event
+    btn.onclick = () => {
+        if(!activeChip || betsLocked) return;
+        
+        // CHECK FUNDS LOCALLY FIRST
+        if (activeChip > liveBalance) {
+            alert("Insufficient Balance!");
+            return;
+        }
+
+        // 1. DEDUCT MONEY (Negative Amount)
+        updateWallet(-activeChip, `Bet on #${i}`);
+
+        // 2. Update Game State
+        bets[i] = (bets[i] || 0) + activeChip;
+        cycleBets[i] = (cycleBets[i] || 0) + activeChip;
+        saveStorage();
+        renderSlip();
+    };
+    
+    // 3. Append the button to the grid container
+    grid.appendChild(btn);
+}
+
+        function setChip(val, el) {
+            if(betsLocked) return; activeChip = val;
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function removeBet(n) { 
+            if(betsLocked) return; 
+            let amt = bets[n];
+            
+            // 1. REFUND MONEY (Positive Amount)
+            updateWallet(amt, `Cancelled Bet #${n}`);
+
+            // 2. Update Game State
+            delete bets[n]; 
+            if(cycleBets[n]) {
+                cycleBets[n] -= amt;
+                if(cycleBets[n] <= 0) delete cycleBets[n];
+            }
+            saveStorage();
+            renderSlip(); 
+        }
+
+        function renderSlip() {
+            const tbody = document.getElementById('slipBody'); tbody.innerHTML = ''; let total = 0;
+            Object.keys(bets).forEach(n => {
+                let amt = bets[n]; total += amt;
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td class="num-cell">#${n}</td><td style="text-align:center">₹${amt}</td><td style="text-align:right" class="no-print"><button class="btn-cancel" onclick="removeBet(${n})">X</button></td>`;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('totalDisplay').innerText = total;
+        }
+        renderSlip();
+
+        function printAndClear() {
+    // 1. Safety Check: No bets? Stop.
+    if(Object.keys(bets).length === 0) return;
+
+    // 2. CONFIRMATION POPUP (This is the fix)
+    // If they click "Cancel" here, the function stops. 
+    // The bets stay on screen, and the print dialog never opens.
+    let confirmAction = confirm("CONFIRM BETS?\nClick OK to submit and print.\nClick Cancel to modify bets.");
+    if (!confirmAction) return; 
+
+    // --- IF WE REACH HERE, THE USER SAID "OK" ---
+
+    // 3. Populate Receipt Data
+    const now = new Date();
+    if(document.getElementById('printMeta')) document.getElementById('printMeta').innerText = now.toLocaleString();
+    if(document.getElementById('printID')) document.getElementById('printID').innerText = clientID;
+
+    // 4. Define the Clear Action (Runs after the print dialog closes)
+    const handleClear = () => {
+        // Clear the visual slip for the next player
+        bets = {}; 
+        localStorage.setItem('vegas_active_bets', '{}'); 
+        renderSlip();
+        // The bet remains in 'cycleBets' (Memory) so it pays out.
+    };
+
+    // 5. Setup Listener
+    window.addEventListener("afterprint", handleClear, { once: true });
+
+    // 6. Open Print Dialog
+    window.print();
+}
+
+        function drawWheel() {
+            canvas.width = 1000; canvas.height = 1000;
+            for(let i=0; i<sectors; i++) {
+                const angle = i * arc;
+                ctx.beginPath(); ctx.fillStyle = i % 2 === 0 ? "#111" : "#800000";
+                ctx.moveTo(500, 500); ctx.arc(500, 500, 500, angle, angle + arc); ctx.fill();
+                ctx.strokeStyle = "#daa520"; ctx.lineWidth = 10; ctx.stroke();
+                ctx.save(); ctx.translate(500, 500); ctx.rotate(angle + arc / 2);
+                ctx.textAlign = "right"; ctx.fillStyle = "white"; ctx.font = "bold 85px 'Cinzel', serif";
+                ctx.fillText(i+1, 460, 30); ctx.restore();
+            }
+        }
+        drawWheel(); 
+
+        // --- GAMEPLAY ACTIONS ---
+        function lockBets() {
+            if(betsLocked) return; betsLocked = true;
+            document.getElementById('grid').classList.add('locked');
+            const msg = document.getElementById('msg'); msg.innerText = "BETS CLOSED"; msg.classList.add('locked-msg');
+        }
+        function unlockBets() {
+            betsLocked = false;
+            document.getElementById('grid').classList.remove('locked');
+            const msg = document.getElementById('msg'); msg.innerText = "PLACE YOUR BETS"; msg.classList.remove('locked-msg');
+            bets = {}; cycleBets = {}; 
+            localStorage.setItem('vegas_active_bets', '{}');
+            localStorage.setItem('vegas_cycle_bets', '{}');
+            renderSlip();
+        }
+
+        function performSpin(serverResult, serverMulti) {
+            if(isSpinning) return;
+            isSpinning = true;
+            lockBets();
+
+            // 1. CLEAR PREVIOUS 2-MINUTE TIMER (If new spin starts early)
+            if (visualCleanupTimer) {
+                clearTimeout(visualCleanupTimer);
+                visualCleanupTimer = null;
+                document.getElementById('winDisplay').classList.remove('show'); // Hide old win immediately
+            }
+
+            // 2. CALCULATE ROTATION (Additive Math)
+            const deg = 360 / 12;
+            const targetAngle = 270 - ((serverResult - 1) * deg) - (deg / 2);
+            
+            const extraSpins = 3600; 
+            let nextRotation = currentRotation + extraSpins + (targetAngle - (currentRotation % 360));
+            
+            if (nextRotation <= currentRotation) nextRotation += 360;
+            
+            currentRotation = nextRotation; // Save for next time
+
+            // 3. ANIMATE
+            canvas.style.transition = 'transform 8s cubic-bezier(0.1, 0, 0.1, 1)';
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            
+            setTimeout(() => {
+                document.getElementById('msg').innerHTML = `<span style="color:#00e676">RESULT: ${serverResult}</span>`;
+                
+                let totalWin = 0;
+                let winText = "";
+                let winKey = String(serverResult); // Force lookup to match the memory dictionary
+
+                // FIXED: Now safely looks up the exact winning number
+                if(cycleBets[winKey] && cycleBets[winKey] > 0) {
+                    totalWin = cycleBets[winKey] * 10 * serverMulti;
+                    
+                    // 1. Log the payout for the House Passbook
+                    logTransaction(`Payout on #${serverResult} (${serverMulti}x)`, -totalWin);
+                    
+                    // 2. ACTUAL PAYOUT: Add the winnings to the player's Firebase Wallet!
+                    updateWallet(totalWin, `Won on #${serverResult} (${serverMulti}x)`);
+                    
+                    winText = `WIN: ₹${totalWin}`;
+                }
+
+                if (serverMulti > 1) winText += winText ? ` (JACKPOT ${serverMulti}X!)` : `JACKPOT ${serverMulti}X!`;
+
+                if(winText) {
+                    const winBox = document.getElementById('winDisplay');
+                    winBox.innerText = winText;
+                    winBox.classList.add('show');
+                }
+
+                if(serverMulti > 1) triggerRain();
+
+                // 4. UNLOCK LOGIC (Game Loop continues after 4s)
+                setTimeout(() => {
+                    isSpinning = false;
+                }, 4000);
+
+                // 5. SET NEW 2-MINUTE CLEANUP TIMER
+                visualCleanupTimer = setTimeout(() => {
+                    document.getElementById('winDisplay').classList.remove('show');
+                }, 120000); 
+
+            }, 8000);
+                }
+
+        // --- VISUAL FX ---
+        let coins = [];
+        class Coin { 
+            constructor() { 
+                this.x = Math.random() * window.innerWidth; 
+                this.y = -50; 
+                this.vel = Math.random() * 4 + 2; 
+            } 
+            update() { 
+                this.y += this.vel; 
+                jCtx.beginPath(); 
+                jCtx.fillStyle = '#ffd700'; 
+                jCtx.arc(this.x, this.y, 8, 0, Math.PI*2); 
+                jCtx.fill(); 
+            } 
+        }
+
+        function triggerRain() {
+            jCanvas.width = window.innerWidth; 
+            jCanvas.height = window.innerHeight;
+            coins = Array.from({length: 300}, () => new Coin());
+            
+            function anim() { 
+                jCtx.clearRect(0,0,jCanvas.width, jCanvas.height); 
+                coins.forEach(c => c.update()); 
+                if(coins.some(c => c.y < window.innerHeight + 100)) {
+                    requestAnimationFrame(anim); 
+                } else {
+                    jCtx.clearRect(0,0,jCanvas.width, jCanvas.height); 
+                }
+            }
+            anim();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function unlockGame() {
+            const p = document.getElementById('gamePass').value;
+            if(p === 'qsc123') {
+                sessionStorage.setItem('vegasSession', 'active'); 
+                document.getElementById('securityOverlay').style.display = 'none';
+            } else {
+                document.getElementById('passError').style.display = 'block';
+            }
+        }
+
+        // Detect when printing finishes and try to restore fullscreen
+        window.addEventListener("afterprint", (event) => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch((e) => {
+                    console.log("User must click to restore fullscreen");
+                });
+            }
+        });
+        
+    </script>
+    
+</body>
+</html>

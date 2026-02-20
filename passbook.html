@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Passbook</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --panel-bg: #1e1e1e;
+            --text-gold: #ffcc00;
+            --text-gray: #aaa;
+            --success: #00e676; /* Green for Deposits/Wins */
+            --danger: #ff1744;  /* Red for Bets/Deductions */
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .back-btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .back-btn:hover { background: #555; }
+
+        .balance-card {
+            background: linear-gradient(135deg, #1e1e1e, #2a2a2a);
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-align: center;
+            margin-bottom: 30px;
+            border: 1px solid #444;
+        }
+
+        .balance-title { color: var(--text-gray); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .balance-amount { font-size: 48px; font-weight: bold; margin: 10px 0; }
+        .positive { color: var(--success); text-shadow: 0 0 10px rgba(0,230,118,0.3); }
+        .negative { color: var(--danger); text-shadow: 0 0 10px rgba(255,23,68,0.3); }
+
+        .passbook-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--panel-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        
+        thead { background: #333; }
+        th { padding: 15px; text-align: left; color: var(--text-gold); font-size: 14px; text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid #333; font-size: 14px; }
+        
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #252525; }
+
+        /* Logic for Colors */
+        .amt-credit { color: var(--success); font-weight: bold; } 
+        .amt-debit { color: var(--danger); font-weight: bold; }   
+
+        .no-data { text-align: center; padding: 30px; color: #666; font-style: italic; }
+
+        @media (max-width: 600px) {
+            th, td { font-size: 12px; padding: 10px; }
+            .balance-amount { font-size: 32px; }
+            th:first-child, td:first-child { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="back-btn">← BACK TO GAME</a>
+        <h2 style="color:var(--text-gold); margin:0;">WALLET PASSBOOK</h2>
+    </div>
+
+    <div class="balance-card">
+        <div class="balance-title">Current Balance</div>
+        <div class="balance-amount" id="mainBalance">Loading...</div>
+    </div>
+
+    <div class="passbook-container">
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Date / Time</th>
+                    <th width="40%">Description</th>
+                    <th width="15%" style="text-align:right">Amount</th>
+                    <th width="20%" style="text-align:right">Total</th>
+                </tr>
+            </thead>
+            <tbody id="txnTable">
+                <tr><td colspan="4" class="no-data">Loading history...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // 1. FIREBASE SETUP
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuaE-ZsqFLnYUrGNF2VaIeDdzrDA-mVyE",
+            authDomain: "id-spin.firebaseapp.com",
+            databaseURL: "https://id-spin-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "id-spin",
+            storageBucket: "id-spin.firebasestorage.app",
+            messagingSenderId: "968364255642",
+            appId: "1:968364255642:web:216707fa28f7f351927223"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 2. IDENTIFY LOGGED-IN PLAYER
+        const clientID = sessionStorage.getItem('royal_user_id');
+        
+        // If not logged in, redirect to login page
+        if (!clientID) {
+            window.location.href = 'login.html';
+        }
+
+        // 3. FETCH LIVE BALANCE
+        db.ref('users/' + clientID + '/balance').on('value', (snapshot) => {
+            const currentBal = snapshot.val() || 0;
+            const balEl = document.getElementById('mainBalance');
+            balEl.innerText = '₹' + parseFloat(currentBal).toLocaleString();
+            
+            // Set Color based on balance
+            balEl.className = 'balance-amount ' + (currentBal >= 0 ? 'positive' : 'negative');
+        });
+
+        // 4. FETCH TRANSACTION HISTORY
+        db.ref('users/' + clientID + '/transactions').on('value', (snapshot) => {
+            const tbody = document.getElementById('txnTable');
+            tbody.innerHTML = ''; // Clear loading text
+
+            if (!snapshot.exists()) {
+                tbody.innerHTML = '<tr><td colspan="4" class="no-data">No wallet history yet. Play a game or add funds!</td></tr>';
+                return;
+            }
+
+            // Convert Firebase object to an array so we can reverse it (newest first)
+            const txns = [];
+            snapshot.forEach((childSnapshot) => {
+                txns.push(childSnapshot.val());
+            });
+            txns.reverse(); // Show newest transactions at the top
+
+            // Render Rows
+            txns.forEach(txn => {
+                const tr = document.createElement('tr');
+                
+                // Logic: Amount > 0 is CREDIT (Green), Amount < 0 is DEBIT (Red)
+                const isCredit = txn.amount >= 0;
+                const sign = isCredit ? '+' : '-';
+                const amtClass = isCredit ? 'amt-credit' : 'amt-debit';
+                const absAmount = Math.abs(txn.amount);
+                const finalBalance = txn.balance || 0;
+
+                tr.innerHTML = `
+                    <td>${txn.date}</td>
+                    <td>${txn.description}</td>
+                    <td class="${amtClass}" style="text-align:right">${sign}₹${absAmount.toLocaleString()}</td>
+                    <td style="text-align:right; color:#ccc;">₹${finalBalance.toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+    </script>
+
+</body>
+</html>
