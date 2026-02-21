@@ -121,6 +121,11 @@
             </select>
 
             <button onclick="saveControl()">ARM SYSTEM</button>
+            
+            <button onclick="applySmartBias()" style="background: linear-gradient(45deg, #ff1744, #d50000); margin-top: 10px; color: white; border: 1px solid #ff5252;">
+                🧠 DEMO: APPLY HOUSE BIAS
+            </button>
+
             <p id="status" style="height: 20px; font-weight: bold; color: #888; margin-top:15px;">System Standby</p>
         </div>
 
@@ -245,6 +250,8 @@
         });
 
         // 6. LIVE BETS MONITOR
+        window.liveBetTotals = {}; // <-- NEW: Store totals globally for the Bias AI
+
         function initMonitor() {
             db.ref('current_round_bets').on('value', (snapshot) => {
                 const allBets = snapshot.val() || {};
@@ -256,9 +263,12 @@
                         if(amount) monitorTotals[num] += parseInt(amount);
                     }
                 });
+                
+                window.liveBetTotals = monitorTotals; // <-- NEW: Save the live math
                 renderGrid(monitorTotals);
             });
         }
+        
 
         function renderGrid(totals) {
             const grid = document.getElementById('monitorGrid');
@@ -295,6 +305,40 @@
                 warningEl.style.display = 'none';
             }
         });
+        // 8. 🧠 EDUCATIONAL DEMO: SMART HOUSE BIAS ALGORITHM
+        window.applySmartBias = function() {
+            const totals = window.liveBetTotals;
+            
+            // Step 1: Find the absolute lowest total bet amount on the board
+            let minBet = Infinity;
+            for (let i = 1; i <= 12; i++) {
+                if (totals[i] < minBet) {
+                    minBet = totals[i];
+                }
+            }
+            
+            // Step 2: Group all numbers that tie for this lowest liability
+            // (e.g., If no one bet on 3, 7, and 9, they all tie at ₹0)
+            let bestHouseNumbers = [];
+            for (let i = 1; i <= 12; i++) {
+                if (totals[i] === minBet) {
+                    bestHouseNumbers.push(i);
+                }
+            }
+            
+            // Step 3: Pick a random number from the House's best options
+            // This ensures it doesn't just pick "1" every time it's empty, avoiding suspicion.
+            const biasNumber = bestHouseNumbers[Math.floor(Math.random() * bestHouseNumbers.length)];
+            
+            // Step 4: Inject it into the UI and auto-arm the system
+            document.getElementById('numInput').value = biasNumber;
+            document.getElementById('xInput').value = "1"; // Force 1x payout to protect the house
+            
+            saveControl(); // Uses your existing function to fire it to Firebase
+            
+            // Step 5: Explain the math to the demonstrator/student
+            alert(`🎓 BIAS DEMO APPLIED:\n\nThe algorithm analyzed all active player bets and selected #${biasNumber}.\n\nThis outcome guarantees the lowest possible payout for the House (Liability: ₹${minBet * 10}).`);
+        }
     </script>
 </body>
 </html>
