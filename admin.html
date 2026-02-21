@@ -250,7 +250,8 @@
         });
 
         // 6. LIVE BETS MONITOR
-        window.liveBetTotals = {}; // <-- NEW: Store totals globally for the Bias AI
+       // 6. LIVE BETS MONITOR
+window.liveBetTotals = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0}; // Pre-filled for safety// <-- NEW: Store totals globally for the Bias AI
 
         function initMonitor() {
             db.ref('current_round_bets').on('value', (snapshot) => {
