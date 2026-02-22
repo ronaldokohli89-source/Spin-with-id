@@ -1170,10 +1170,10 @@ for(let i=1; i<=12; i++) {
                     totalWin = cycleBets[winKey] * 10 * serverMulti;
                     
                     // 1. Log the payout for the House Passbook
-                    logTransaction(`Payout on #${serverResult} (${serverMulti}x)`, -totalWin);
+                    // logTransaction(`Payout on #${serverResult} (${serverMulti}x)`, -totalWin);
                     
-                    // 2. ACTUAL PAYOUT: Add the winnings to the player's Firebase Wallet!
-                    updateWallet(totalWin, `Won on #${serverResult} (${serverMulti}x)`);
+                    // // 2. ACTUAL PAYOUT: Add the winnings to the player's Firebase Wallet!
+                    // updateWallet(totalWin, `Won on #${serverResult} (${serverMulti}x)`);
                     
                     winText = `WIN: ₹${totalWin}`;
                 }

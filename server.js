@@ -120,23 +120,44 @@ async function runSpinSequence() {
             }
         }
 
-        // 2. CALCULATE GLOBAL VOLUME (SUBTRACT WINS)
+        // 2. CALCULATE PAYOUTS & UPDATE USER WALLETS DIRECTLY FROM SERVER
         const betsSnap = await get(child(ref(db), 'current_round_bets'));
         let totalPayout = 0;
 
         if (betsSnap.exists()) {
             const allPlayers = betsSnap.val();
-            Object.values(allPlayers).forEach(playerBets => {
+            
+            // Loop through every player who placed a bet
+            for (const [uid, playerBets] of Object.entries(allPlayers)) {
                 if (playerBets[finalResult]) {
-                    const winAmount = (playerBets[finalResult] * 10 * finalMulti);
+                    const winAmount = playerBets[finalResult] * 10 * finalMulti;
                     totalPayout += winAmount;
+
+                    // A. Add winning amount to Player's Balance
+                    const userBalRef = ref(db, `users/${uid}/balance`);
+                    const txnResult = await runTransaction(userBalRef, (currentBal) => {
+                        return (parseFloat(currentBal) || 0) + winAmount;
+                    });
+
+                    // B. Log the transaction in the Player's Passbook
+                    if (txnResult.committed) {
+                        const newBal = txnResult.snapshot.val();
+                        const passbookRef = push(ref(db, `users/${uid}/transactions`));
+                        await set(passbookRef, {
+                            amount: winAmount,
+                            balance: newBal,
+                            description: `Won on #${finalResult} (${finalMulti}x)`,
+                            date: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+                        });
+                        console.log(`✅ Paid ₹${winAmount} to User: ${uid}`);
+                    }
                 }
-            });
+            }
         }
 
-        // UPDATE FIREBASE: SUBTRACT PAYOUTS FROM VOLUME
+        // UPDATE FIREBASE: SUBTRACT PAYOUTS FROM HOUSE VOLUME
         if (totalPayout > 0) {
-            console.log(`📊 PAYOUTS: -${totalPayout} (Subtracted from Global Volume)`);
+            console.log(`📊 TOTAL PAYOUTS: -${totalPayout} (Subtracted from Global Volume)`);
             const volRef = ref(db, 'house_stats/daily_volume');
             
             await runTransaction(volRef, (currentVol) => {
