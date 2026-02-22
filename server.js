@@ -53,25 +53,64 @@ async function runSpinSequence() {
     status = "SPINNING";
     console.log("\n\n🎰 STARTING SPIN SEQUENCE...");
 
-    // A. DETERMINE RESULT (Check Admin Rigging)
+    // A. DETERMINE RESULT (Auto Bias + Admin Rigging)
     let finalResult = Math.floor(Math.random() * 12) + 1; // Default Random
     let finalMulti = 1;
 
     try {
-        const snapshot = await get(child(ref(db), 'house_control'));
-        if (snapshot.exists()) {
-            const data = snapshot.val();
-            
+        // 1. Check if Admin manually rigged the wheel (Admin Panel Override)
+        let adminOverride = false;
+        const houseControlSnap = await get(child(ref(db), 'house_control'));
+        
+        if (houseControlSnap.exists()) {
+            const data = houseControlSnap.val();
             if (data.number && data.number > 0) {
                 finalResult = parseInt(data.number);
-                console.log(`⚠️  ADMIN OVERRIDE APPLIED: #${finalResult}`);
+                adminOverride = true;
+                console.log(`⚠️ ADMIN OVERRIDE APPLIED: #${finalResult}`);
             }
             if (data.multiplier && data.multiplier >= 1) {
                 finalMulti = parseInt(data.multiplier);
-                console.log(`⚠️  MULTIPLIER ACTIVE: ${finalMulti}x`);
             }
         }
-    } catch (e) { console.error("Error reading house_control:", e); }
+
+        // 2. AUTO SMART BIAS (Protect the House automatically!)
+        if (!adminOverride) {
+            const betsSnap = await get(child(ref(db), 'current_round_bets'));
+            if (betsSnap.exists()) {
+                const allPlayers = betsSnap.val();
+                let liability = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0};
+
+               // Calculate TOTAL LIABILITY (Payout amount) for each number
+                for (const playerBets of Object.values(allPlayers)) {
+                    for (const [num, amt] of Object.entries(playerBets)) {
+                        // Liability is the amount they bet * 10 * the multiplier
+                        liability[num] += (parseInt(amt) || 0) * 10 * finalMulti; 
+                    }
+                }
+
+                // Find the absolute lowest payout amount
+                let minLiability = Infinity;
+                for (let i = 1; i <= 12; i++) {
+                    if (liability[i] < minLiability) {
+                        minLiability = liability[i];
+                    }
+                }
+
+                // Find all numbers that have this minimum liability
+                let bestHouseNumbers = [];
+                for (let i = 1; i <= 12; i++) {
+                    if (liability[i] === minLiability) {
+                        bestHouseNumbers.push(i);
+                    }
+                }
+
+                // Pick a random number from the safe list
+                finalResult = bestHouseNumbers[Math.floor(Math.random() * bestHouseNumbers.length)];
+                console.log(`🧠 AUTO BIAS APPLIED: House picked #${finalResult} (Min Liability: ₹${minLiability})`);
+            }
+        }
+    } catch (e) { console.error("Error with Rigging/Bias:", e); }
 
     // B. BROADCAST RESULT TO CLIENTS (STARTS ANIMATION INSTANTLY)
     update(ref(db, 'game_state'), {
