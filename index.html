@@ -849,6 +849,19 @@
         let betsLocked = false;
         let isSpinning = false;
         let lastServerStatus = "";
+        if (clientID) {
+    db.ref(`current_round_bets/${clientID}`).once('value', (snap) => {
+        // If the server already wiped the bets for a new round, wipe local storage too
+        if (!snap.exists() && Object.keys(bets).length > 0) {
+            console.log("Cleared ghost bets from previous round.");
+            bets = {};
+            cycleBets = {};
+            localStorage.setItem('vegas_active_bets', '{}');
+            localStorage.setItem('vegas_cycle_bets', '{}');
+            renderSlip();
+        }
+    });
+}
 
         // 🟢 NEW: GLOBAL WALLET VARIABLE
         let liveBalance = 0; 
@@ -1042,6 +1055,7 @@ for(let i=1; i<=12; i++) {
         function removeBet(n) { 
             if(betsLocked) return; 
             let amt = bets[n];
+            if(!amt || !cycleBets[n] || cycleBets[n] < amt) return;
             
             // 1. REFUND MONEY (Positive Amount)
             updateWallet(amt, `Cancelled Bet #${n}`);
@@ -1160,6 +1174,9 @@ for(let i=1; i<=12; i++) {
             
             setTimeout(() => {
                 document.getElementById('msg').innerHTML = `<span style="color:#00e676">RESULT: ${serverResult}</span>`;
+                bets = {};
+    localStorage.setItem('vegas_active_bets', '{}');
+    renderSlip();
                 
                 let totalWin = 0;
                 let winText = "";
