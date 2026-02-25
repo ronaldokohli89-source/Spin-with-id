@@ -86,7 +86,7 @@
     <div id="securityOverlay">
         <div class="lock-box">
             <div class="lock-icon">🔒</div>
-            <h3 style="color:#d4af37">ADMIN ACCESS</h3>
+            <h3 style="color:#d4af37">MEMBERS ACCESS</h3>
             <input type="password" id="adminPass" placeholder="Enter Password" style="text-align:center;">
             <button onclick="unlockPanel()">UNLOCK</button>
             <p id="lockError" style="color:red; display:none; margin-top:10px;">Access Denied</p>
@@ -169,7 +169,7 @@
 
        function unlockPanel() {
     const p = document.getElementById('adminPass').value;
-    if(p === 'R0y@lV3g4s!2026') { // <-- Change 'admin123' to your new password
+    if(p === 'R7V18') { // <-- Change 'admin123' to your new password
         document.getElementById('securityOverlay').style.display = 'none';
         document.getElementById('mainContainer').classList.add('unlocked');
     } else {
