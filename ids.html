@@ -166,7 +166,7 @@
 
     <div id="securityOverlay">
         <div class="auth-box">
-            <h2 style="margin-top:0; font-family:'Cinzel',serif;">ADMIN ACCESS</h2>
+            <h2 style="margin-top:0; font-family:'Cinzel',serif;">MEMBERS ACCESS</h2>
             <p style="color:#888; font-size:12px; margin-bottom:15px;">ENTER PASSWORD TO VIEW DATABASE</p>
             <input type="password" id="adminPass" placeholder="Password">
             <br>
@@ -225,19 +225,19 @@
         const db = firebase.database();
 
         // --- SECURITY CHECK ---
-        function checkAccess() {
-            const pass = document.getElementById('adminPass').value;
-            const err = document.getElementById('errorMsg');
-            
-            if (pass === 'admin123') {
-                document.getElementById('securityOverlay').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-                fetchUserIDs();
-                fetchRequests(); // NEW: Fetch requests on unlock
-            } else {
-                err.style.display = 'block';
-            }
-        }
+       function checkAccess() {
+    const pass = document.getElementById('adminPass').value;
+    const err = document.getElementById('errorMsg');
+    
+    if (pass === 'R0y@lV3g4s!2026') { // <-- Change 'admin123' to your new password
+        document.getElementById('securityOverlay').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        fetchUserIDs();
+        fetchRequests(); 
+    } else {
+        err.style.display = 'block';
+    }
+}
 
         // Allow "Enter" key to submit password
         document.getElementById("adminPass").addEventListener("keypress", function(event) {

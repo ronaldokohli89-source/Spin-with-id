@@ -167,16 +167,15 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. UNLOCK PANEL FUNCTION
-        function unlockPanel() {
-            const p = document.getElementById('adminPass').value;
-            if(p === 'admin123') { 
-                document.getElementById('securityOverlay').style.display = 'none';
-                document.getElementById('mainContainer').classList.add('unlocked');
-            } else {
-                document.getElementById('lockError').style.display = 'block';
-            }
-        }
+       function unlockPanel() {
+    const p = document.getElementById('adminPass').value;
+    if(p === 'R0y@lV3g4s!2026') { // <-- Change 'admin123' to your new password
+        document.getElementById('securityOverlay').style.display = 'none';
+        document.getElementById('mainContainer').classList.add('unlocked');
+    } else {
+        document.getElementById('lockError').style.display = 'block';
+    }
+}
 
         // 3. 👑 CREATE PLAYER FUNCTION (The Magical Part)
         // This attaches the function to the window to make sure the button can find it

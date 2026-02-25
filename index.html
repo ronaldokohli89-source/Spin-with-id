@@ -172,6 +172,7 @@
             box-shadow: 0 0 15px #fff, 0 0 30px var(--text-cyan); 
             transform: scale(1.2) translateY(-10px); z-index: 2; 
         }
+        .c5 { background: radial-gradient(#8e2de2, #4a00e0); color: white; }
         .c10 { background: radial-gradient(#00c6ff, #0072ff); } 
         .c20 { background: radial-gradient(#ff416c, #ff4b2b); } 
         .c50 { background: radial-gradient(#56ab2f, #a8e063); color: black; } 
@@ -684,6 +685,7 @@
             <div class="grid-12" id="grid"></div>
             
             <div class="chip-rack">
+                <div class="chip c5" onclick="setChip(5, this)">5</div>
                 <div class="chip c10" onclick="setChip(10, this)">10</div>
                 <div class="chip c20" onclick="setChip(20, this)">20</div>
                 <div class="chip c50" onclick="setChip(50, this)">50</div>
