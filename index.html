@@ -338,31 +338,102 @@
    /* =========================================
    🖨️ THERMAL PRINTER STYLES (2 Inch / 58mm)
    ========================================= */
+/* =========================================
+   🖨️ THERMAL PRINTER STYLES (2 Inch / 58mm)
+   ========================================= */
 @media print {
+    /* 1. RESET ALL GRAPHICS (Fixes the blank page bug) */
+    * {
+        color: black !important;
+        background: transparent !important;
+        text-shadow: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important; /* CRITICAL: Fixes Chrome invisibility bug */
+        filter: none !important;
+    }
+
     @page { 
         margin: 0; 
         size: 58mm auto; /* Forces 58mm width paper */
     }
 
     body { 
-        width: 55mm; /* Slightly less than 58mm to prevent cutoff */
-        background: white !important; 
-        color: black !important; 
+        width: 55mm; 
         margin: 0 auto; 
-        padding: 2px; /* Reduced padding for smaller paper */
+        padding: 0;
         font-family: 'Courier New', monospace; 
-        font-size: 11px; /* Slightly smaller font for narrower paper */
+        font-size: 11px; 
         display: block !important; 
         height: auto !important; 
         overflow: visible !important;
     }
 
-
-    /* HIDE GAME INTERFACE */
-    .top-bar, .left-panel, .center-panel, .admin-trigger, .logout-btn, 
-    #coinCanvas, .win-box, .fullscreen-btn, .chip-rack, .grid-12, #timer, 
-    .slip-header, .btn-print, .vol-box, .logo-text, #securityOverlay { 
+    /* 2. STRICTLY HIDE EVERYTHING OUTSIDE THE BETTING SLIP */
+    body > *:not(.game-hud), /* Hides the duplicate contact button at the bottom */
+    .top-bar, 
+    .left-panel, 
+    .center-panel, 
+    .admin-trigger, 
+    .win-box, 
+    .fullscreen-btn, 
+    .chip-rack, 
+    .grid-12, 
+    #timer, 
+    .slip-header, 
+    .btn-print, 
+    #securityOverlay { 
         display: none !important; 
+    }
+
+    /* 3. SHOW AND FORMAT THE RECEIPT PANEL */
+    .game-hud, .panel, .slip-panel { 
+        display: block !important; 
+        width: 100% !important; 
+        height: auto !important; 
+        border: none !important; 
+        margin: 0 !important; 
+        padding: 2px !important;
+        grid-template-columns: 1fr !important;
+    }
+
+    /* 4. HEADER & FOOTER */
+    .print-header, .print-footer { display: block !important; text-align: center; }
+    
+    .print-logo { 
+        font-size: 14px; 
+        font-weight: bold; 
+        border-bottom: 1px dashed #000; 
+        padding-bottom: 4px; 
+        margin-bottom: 4px; 
+    }
+    
+    .print-meta { 
+        font-size: 9px; 
+        margin-bottom: 8px; 
+    }
+    
+    .print-footer { 
+        margin-top: 10px; 
+        border-top: 1px dashed #000; 
+        padding-top: 4px; 
+        font-size: 9px; 
+    }
+
+    /* 5. TABLE STYLES */
+    .slip-content { overflow: visible !important; height: auto !important; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    
+    th { 
+        border-bottom: 1px solid #000 !important; 
+        font-size: 10px; 
+        text-align: left;
+    }
+    
+    td { 
+        border-bottom: 1px dashed #666 !important; 
+        padding: 3px 0; 
+        font-size: 12px; 
+        font-weight: bold;
     }
 
     /* HIDE ACTION COLUMN (X Buttons) */
@@ -370,90 +441,22 @@
         display: none !important;
     }
 
-    /* SHOW RECEIPT HEADER/FOOTER (Optimized for 58mm) */
-    .print-header, .print-footer { display: block !important; text-align: center; }
-    
-    .print-logo { 
-        font-size: 14px; /* Scaled down from 18px to prevent wrapping */
-        font-weight: bold; 
-        border-bottom: 1px dashed #000; /* Thinner line for small paper */
-        padding-bottom: 4px; 
-        margin-bottom: 4px; 
-    }
-    
-    .print-meta { 
-        font-size: 9px; /* Scaled down for 58mm */
-        margin-bottom: 8px; 
-    }
-    
-    .print-footer { 
-        margin-top: 10px; /* Reduced from 15px to save paper length */
-        border-top: 1px dashed #000; 
-        padding-top: 4px; 
-        font-size: 9px; /* Scaled down for 58mm */
-    }
-
-    /* RESET CONTAINER STYLES */
-    .game-hud, .panel, .slip-panel { 
-        display: block !important; 
-        width: 100% !important; 
-        height: auto !important; 
-        border: none !important; 
-        box-shadow: none !important; 
-        margin: 0 !important; 
-        padding: 0 !important;
-        background: transparent !important;
-        grid-template-columns: 1fr !important; /* Remove Grid */
-    }
-
-    /* TABLE STYLES (Optimized for 58mm) */
-    .slip-content { overflow: visible !important; height: auto !important; }
-    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    
-    th { 
-        border-bottom: 1px solid #000 !important; 
-        color: #000 !important; 
-        font-size: 10px; 
-        text-align: left;
-    }
-    
-    td { 
-        border-bottom: 1px dashed #666 !important; 
-        padding: 3px 0; /* Tighter padding */
-        font-size: 12px; /* Scaled down for 58mm */
-        font-weight: bold;
-        color: #000 !important; 
-    }
-
-    /* Alignment: Forces Left/Right split, overrides inline center tags */
+    /* Alignment: Left/Right split */
     th:nth-child(1), td:nth-child(1) { text-align: left; width: 50%; }
     th:nth-child(2), td:nth-child(2) { text-align: right !important; width: 50%; }
 
-    /* TOTAL ROW */
+    /* 6. TOTAL ROW */
     .total-row { 
         border-top: 2px solid #000 !important; 
-        color: #000 !important; 
         font-weight: bold; 
-        font-size: 14px; /* Scaled down from 18px */
+        font-size: 14px; 
         margin-top: 5px;
         padding-top: 5px;
         display: flex; 
         justify-content: space-between;
     }
-
-/* HIDE PRINT ELEMENTS ON SCREEN */
-.print-header, .print-footer { display: none; }
-       .game-hud {
-    align-items: stretch;
 }
-
-.center-panel {
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-}
+     
 /* =======================
    MOBILE OPTIMIZATION
 ======================= */
