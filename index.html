@@ -335,27 +335,28 @@
             .num-btn { padding: 20px 0; }
         }
 
-       /* =========================================
-   🖨️ THERMAL PRINTER STYLES (3 Inch / 80mm)
+   /* =========================================
+   🖨️ THERMAL PRINTER STYLES (2 Inch / 58mm)
    ========================================= */
 @media print {
     @page { 
         margin: 0; 
-        size: 80mm auto; /* Forces 80mm width paper */
+        size: 58mm auto; /* Forces 58mm width paper */
     }
 
     body { 
-        width: 78mm; /* Slightly less than 80mm to prevent cutoff */
+        width: 55mm; /* Slightly less than 58mm to prevent cutoff */
         background: white !important; 
         color: black !important; 
         margin: 0 auto; 
-        padding: 5px; 
-        font-family: 'Courier New', monospace; /* Receipt font */
-        font-size: 12px;
+        padding: 2px; /* Reduced padding for smaller paper */
+        font-family: 'Courier New', monospace; 
+        font-size: 11px; /* Slightly smaller font for narrower paper */
         display: block !important; 
         height: auto !important; 
         overflow: visible !important;
     }
+
 
     /* HIDE GAME INTERFACE */
     .top-bar, .left-panel, .center-panel, .admin-trigger, .logout-btn, 
@@ -369,12 +370,28 @@
         display: none !important;
     }
 
-    /* SHOW RECEIPT HEADER/FOOTER */
+    /* SHOW RECEIPT HEADER/FOOTER (Optimized for 58mm) */
     .print-header, .print-footer { display: block !important; text-align: center; }
     
-    .print-logo { font-size: 18px; font-weight: bold; border-bottom: 2px dashed #000; padding-bottom: 5px; margin-bottom: 5px; }
-    .print-meta { font-size: 10px; margin-bottom: 10px; }
-    .print-footer { margin-top: 15px; border-top: 1px dashed #000; padding-top: 5px; font-size: 10px; }
+    .print-logo { 
+        font-size: 14px; /* Scaled down from 18px to prevent wrapping */
+        font-weight: bold; 
+        border-bottom: 1px dashed #000; /* Thinner line for small paper */
+        padding-bottom: 4px; 
+        margin-bottom: 4px; 
+    }
+    
+    .print-meta { 
+        font-size: 9px; /* Scaled down for 58mm */
+        margin-bottom: 8px; 
+    }
+    
+    .print-footer { 
+        margin-top: 10px; /* Reduced from 15px to save paper length */
+        border-top: 1px dashed #000; 
+        padding-top: 4px; 
+        font-size: 9px; /* Scaled down for 58mm */
+    }
 
     /* RESET CONTAINER STYLES */
     .game-hud, .panel, .slip-panel { 
@@ -389,9 +406,9 @@
         grid-template-columns: 1fr !important; /* Remove Grid */
     }
 
-    /* TABLE STYLES */
+    /* TABLE STYLES (Optimized for 58mm) */
     .slip-content { overflow: visible !important; height: auto !important; }
-    table { width: 100%; border-collapse: collapse; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     
     th { 
         border-bottom: 1px solid #000 !important; 
@@ -402,27 +419,27 @@
     
     td { 
         border-bottom: 1px dashed #666 !important; 
-        padding: 4px 0; 
-        font-size: 14px; 
+        padding: 3px 0; /* Tighter padding */
+        font-size: 12px; /* Scaled down for 58mm */
         font-weight: bold;
         color: #000 !important; 
     }
 
-    /* Alignment */
-    th:nth-child(2), td:nth-child(2) { text-align: right; } /* Amount Right Align */
+    /* Alignment: Forces Left/Right split, overrides inline center tags */
+    th:nth-child(1), td:nth-child(1) { text-align: left; width: 50%; }
+    th:nth-child(2), td:nth-child(2) { text-align: right !important; width: 50%; }
 
     /* TOTAL ROW */
     .total-row { 
         border-top: 2px solid #000 !important; 
         color: #000 !important; 
         font-weight: bold; 
-        font-size: 18px; 
-        margin-top: 10px;
-        padding-top: 10px;
+        font-size: 14px; /* Scaled down from 18px */
+        margin-top: 5px;
+        padding-top: 5px;
         display: flex; 
         justify-content: space-between;
     }
-}
 
 /* HIDE PRINT ELEMENTS ON SCREEN */
 .print-header, .print-footer { display: none; }
