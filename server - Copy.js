@@ -2,25 +2,21 @@ const { initializeApp } = require("firebase/app");
 const { getDatabase, ref, update, get, child, set, runTransaction, push } = require("firebase/database");
 const express = require('express');
 
-// server.js - New Project Migration
+
+// server.js - Update Section 1
 const firebaseConfig = {
-  apiKey: "AIzaSyCMoALpMpplt-vz4dkhaMzh315wwOhPZh4",
-  authDomain: "spin-cards-86e6f.firebaseapp.com",
-  databaseURL: "https://spin-cards-86e6f-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "spin-cards-86e6f",
-  storageBucket: "spin-cards-86e6f.firebasestorage.app",
-  messagingSenderId: "305473056071",
-  appId: "1:305473056071:web:5b278492b216edc5fdb062"
+  apiKey: "AIzaSyAuaE-ZsqFLnYUrGNF2VaIeDdzrDA-mVyE",
+  authDomain: "id-spin.firebaseapp.com",
+  databaseURL: "https://id-spin-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "id-spin",
+  storageBucket: "id-spin.firebasestorage.app",
+  messagingSenderId: "968364255642",
+  appId: "1:968364255642:web:216707fa28f7f351927223"
 };
 
 // --- INITIALIZE FIREBASE & DB ---
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const CARD_MAP = [
-    { id: 1, rank: 'J', suit: '♠' }, { id: 2, rank: 'J', suit: '♥' }, { id: 3, rank: 'J', suit: '♣' }, { id: 4, rank: 'J', suit: '♦' },
-    { id: 5, rank: 'Q', suit: '♠' }, { id: 6, rank: 'Q', suit: '♥' }, { id: 7, rank: 'Q', suit: '♣' }, { id: 8, rank: 'Q', suit: '♦' },
-    { id: 9, rank: 'K', suit: '♠' }, { id: 10, rank: 'K', suit: '♥' }, { id: 11, rank: 'K', suit: '♣' }, { id: 12, rank: 'K', suit: '♦' }
-];
+const db = getDatabase(app); // This defines 'db' so your functions can use it
 
 // --- 2. GAME SETTINGS ---
 const CYCLE_TIME = 180; // 3 Minutes
@@ -71,7 +67,7 @@ async function runSpinSequence() {
             if (data.number && data.number > 0) {
                 finalResult = parseInt(data.number);
                 adminOverride = true;
-                console.log(`⚠️ ADMIN OVERRIDE APPLIED: ${CARD_MAP[finalResult - 1].rank}${CARD_MAP[finalResult - 1].suit}`);
+                console.log(`⚠️ ADMIN OVERRIDE APPLIED: #${finalResult}`);
             }
             if (data.multiplier && data.multiplier >= 1) {
                 finalMulti = parseInt(data.multiplier);
@@ -111,7 +107,7 @@ async function runSpinSequence() {
 
                 // Pick a random number from the safe list
                 finalResult = bestHouseNumbers[Math.floor(Math.random() * bestHouseNumbers.length)];
-                console.log(`🧠 AUTO BIAS APPLIED: House picked ${CARD_MAP[finalResult - 1].rank}${CARD_MAP[finalResult - 1].suit} (Min Liability: ₹${minLiability})`);
+                console.log(`🧠 AUTO BIAS APPLIED: House picked #${finalResult} (Min Liability: ₹${minLiability})`);
             }
         }
     } catch (e) { console.error("Error with Rigging/Bias:", e); }
@@ -132,16 +128,15 @@ async function runSpinSequence() {
     setTimeout(async () => {
         
         // 1. SAVE HISTORY (QUEUE) - Happens when wheel stops
-        // 1. SAVE HISTORY (QUEUE) - Happens when wheel stops
         console.log("📝 Updating History Queue...");
         const historyRef = ref(db, 'results_history');
         const newEntryRef = push(historyRef); 
         
         await set(newEntryRef, {
             result: finalResult,
-            multiplier: finalMulti, // <--- ADD THIS EXACT LINE
             timestamp: Date.now()
         });
+
         // 2. CLEANUP HISTORY (Keep last 20)
         const snap = await get(historyRef);
         if (snap.exists() && snap.size > 20) { 
@@ -190,7 +185,7 @@ async function runSpinSequence() {
                         await set(passbookRef, {
                             amount: winAmount,
                             balance: newBal,
-                          description: `Won on ${CARD_MAP[finalResult - 1].rank}${CARD_MAP[finalResult - 1].suit} (${finalMulti}x)`,
+                            description: `Won on #${finalResult} (${finalMulti}x)`,
                             date: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                         });
                         console.log(`✅ Paid ₹${winAmount} to User: ${uid}`);
@@ -260,44 +255,21 @@ async function checkDailyReset() {
 /// --- 6. RENDER DEPLOYMENT SERVER ---
 const appServer = express();
 const port = process.env.PORT || 3000;
-const path = require('path');
+const path = require('path'); // Required to map file directories
 
-// 1. Point exactly to your frontend folder!
-// The ".." tells the server to step back one folder, then open SPINCARDSFRONTEND
-const frontendPath = path.join(__dirname, '../SPINCARDSFRONTEND');
+// 1. Tell Express to serve all static HTML/CSS/JS files from this directory
+appServer.use(express.static(__dirname));
 
-// 2. Tell Express to serve files from this new path
-appServer.use(express.static(frontendPath));
+// 2. Move your status message to a specific /ping route (Great for UptimeRobot)
+appServer.get('/ping', (req, res) => {
+    res.send(`Royal Vegas Game Server is RUNNING. <br>Status: ${status} <br>Timer: ${timer}`);
+});
 
-// 3. Update the routes to pull from frontendPath instead of __dirname
+// 3. Redirect the root URL (/) directly to your game's login or index page
 appServer.get('/', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+    res.sendFile(path.join(process.cwd(), 'index.html'));
 });
 
-appServer.get('/index.html', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-});
-
-appServer.get('/admin.html', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'admin.html'));
-});
-
-appServer.get('/ids.html', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'ids.html'));
-});
-
-appServer.get('/funds.html', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'funds.html'));
-});
-
-appServer.get('/passbook.html', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'passbook.html'));
-});
-
-appServer.get('/login.html', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'login.html'));
-});
-// --- START THE SERVER ---
 appServer.listen(port, () => {
     console.log(`🚀 HTTP Server listening on port ${port}`);
     console.log(`🌐 Game URL: http://localhost:${port}`);
