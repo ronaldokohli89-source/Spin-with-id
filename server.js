@@ -187,11 +187,12 @@ async function runSpinSequence() {
                     if (txnResult.committed) {
                         const newBal = txnResult.snapshot.val();
                         const passbookRef = push(ref(db, `users/${uid}/transactions`));
-                        await set(passbookRef, {
+                       await set(passbookRef, {
                             amount: winAmount,
                             balance: newBal,
-                          description: `Won on ${CARD_MAP[finalResult - 1].rank}${CARD_MAP[finalResult - 1].suit} (${finalMulti}x)`,
-                            date: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+                            description: `Won on ${CARD_MAP[finalResult - 1].rank}${CARD_MAP[finalResult - 1].suit} (${finalMulti}x)`,
+                            date: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                            billNo: "SYS-PAYOUT" // <--- ADD THIS EXACT LINE
                         });
                         console.log(`✅ Paid ₹${winAmount} to User: ${uid}`);
                     }
@@ -227,6 +228,8 @@ function resetGame() {
 }
 
 // --- 5. DAILY VOLUME RESET (MIDNIGHT LOGIC) ---
+let localLastResetDate = null; // Store in server memory to prevent 86,400 DB reads/day
+
 async function checkDailyReset() {
     // 1. Get Current Date in INDIA TIME (IST)
     const now = new Date();
@@ -236,24 +239,32 @@ async function checkDailyReset() {
     });
     const todayStr = formatter.format(now); // e.g. "21/01/2026"
 
-    // 2. Get Last Reset Date from DB
-    const volRef = child(ref(db), 'house_stats');
-    const snapshot = await get(volRef);
-    const stats = snapshot.val() || {};
-    const lastResetDate = stats.last_reset_date || "";
+    // 2. Fetch from Firebase ONLY ONCE when server first starts
+    if (localLastResetDate === null) {
+        const volRef = child(ref(db), 'house_stats');
+        const snapshot = await get(volRef);
+        const stats = snapshot.val() || {};
+        
+        // Save to local memory
+        localLastResetDate = stats.last_reset_date || todayStr; 
+        return; 
+    }
 
-    // 3. Compare: If dates are different, it means we passed Midnight
-    if (todayStr !== lastResetDate) {
+    // 3. ZERO-COST CHECK: Compare memory date vs today's date
+    if (todayStr !== localLastResetDate) {
         console.log(`📅 NEW DAY DETECTED (${todayStr}) - RESETTING DAILY VOLUME & HISTORY`);
         
         // A. Reset House Volume
-        update(ref(db, 'house_stats'), { 
+        await update(ref(db, 'house_stats'), { 
             daily_volume: 0, 
             last_reset_date: todayStr 
         });
 
         // B. WIPE HISTORY QUEUE
-        set(ref(db, 'results_history'), null);
+        await set(ref(db, 'results_history'), null);
+        
+        // C. Update local memory so it doesn't trigger again today
+        localLastResetDate = todayStr;
     }
 }
 
