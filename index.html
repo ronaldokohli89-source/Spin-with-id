@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royal Vegas 12 - Midnight Edition</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Orbitron:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+ <style>
+        :root {
+            /* THEME: Midnight Casino Red & Gold */
+            --bg-gradient: radial-gradient(circle at center, #3a0000 0%, #0a0a0a 100%);
+            --glass-panel: rgba(15, 15, 15, 0.85);
+            --border-neon: 1px solid #d4af37;
+            --text-gold: #ffd700;
+            --text-cyan: #ffffff;
+            --shadow-soft: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            background: #0a0a0a; 
+            background-image: var(--bg-gradient);
+            color: #f5f5f5;
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+            display: flex; /* Restored for direct body flex */
+            flex-direction: column; /* Restored */
+        }
+
+        /* --- TOP BAR --- */
+        .top-bar { 
+            height: 70px; 
+            flex-shrink: 0; 
+            display: grid; 
+            grid-template-columns: 1fr auto 1fr; 
+            align-items: center; 
+            padding: 0 30px; 
+            background: rgba(10, 10, 10, 0.95); 
+            border-bottom: var(--border-neon);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        
+        .top-left { display: flex; align-items: center; gap: 20px; }
+        .top-right { display: flex; justify-content: flex-end; align-items: center; }
+
+        .logo-text {
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            background: linear-gradient(to right, #b38728, #fbf5b7, #aa771c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+
+        /* TIMER */
+        .timer-box { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 36px; 
+            font-weight: bold;
+            color: var(--text-gold);
+            background: #111;
+            padding: 4px 40px; 
+            border-radius: 8px; 
+            border: 2px solid #d4af37;
+            letter-spacing: 3px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+        }
+        
+        /* VOLUME BOX */
+        .vol-box { 
+            text-align: right; 
+            background: transparent; 
+            padding: 5px 20px; 
+            border-right: 3px solid var(--text-gold); 
+            cursor: pointer; 
+            transition: 0.3s;
+        }
+        .vol-box:hover { background: rgba(0,0,0,0.03); border-radius: 4px; }
+        .vol-box small { color: #aaa; }
+        .vol-box span { color: var(--text-gold); }
+        .vol-positive { color: #28a745; }
+        .vol-negative { color: #d32f2f; }
+
+       /* --- MAIN LAYOUT --- */
+      .game-hud { 
+            flex: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1.3fr); 
+            align-items: center; 
+            gap: 2vw; 
+            padding: 1vw 3vw; 
+            height: calc(100vh - 70px); /* Restored to vh */
+            max-width: 1800px;
+            margin: 0 auto;
+            overflow: hidden; 
+        }
+
+        /* PANEL STYLES */
+        .panel {
+            background: var(--glass-panel);
+            backdrop-filter: blur(12px);
+            border: var(--border-neon);
+            border-radius: 12px;
+            padding: 2vh 20px; 
+            box-shadow: var(--shadow-soft);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .center-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 0;
+        }
+
+        /* --- BETTING GRID --- */
+      .grid-12 { 
+            display: grid; 
+            grid-template-columns: repeat(4, minmax(0, 1fr)) 60px; 
+            gap: 1.5vw; 
+            width: 100%; 
+            margin-bottom: 1vh; 
+        }
+        
+        .grid-12.locked { filter: grayscale(100%) brightness(0.9); pointer-events: none; opacity: 0.7; }
+
+        .num-btn { 
+            aspect-ratio: 2.5 / 3.5; 
+            width: 100%;
+            height: auto; 
+            background: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            padding: 0; 
+            box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+            position: relative;
+        }
+        
+        .num-btn:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4); 
+        }
+        .num-btn:active { transform: translateY(2px); box-shadow: none; }
+        
+        .num-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* ALL BUTTONS */
+        .group-bet-btn {
+            background: linear-gradient(135deg, #fdfbfb 0%, #EAE5D9 100%);
+            border: 1px solid rgba(212, 175, 55, 0.6);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #333;
+            font-family: 'Cinzel', serif;
+            padding: 4px;
+        }
+        .group-bet-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(212, 175, 55, 0.4);
+            background: #fff;
+        }
+        .group-bet-btn:active { transform: translateY(1px); }
+
+        /* --- CHIPS --- */
+        .chip-rack { 
+            display: flex; justify-content: space-around; 
+            background: rgba(255,255,255,0.05); 
+            padding: 12px; 
+            border-radius: 50px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            margin-top: auto;
+        }
+
+        .chip { 
+            width: 45px; 
+            height: 45px; 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-family: 'Roboto', sans-serif; font-size: 14px; color: white;
+            cursor: pointer; border: 2px dashed rgba(255,255,255,0.8); 
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2); 
+            transition: 0.2s; 
+        }
+        .chip:hover { transform: translateY(-5px); }
+        .chip.active { 
+            border-style: solid; border-color: #333; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.5); 
+            transform: scale(1.15) translateY(-8px); z-index: 2; 
+        }
+        .c5 { background: radial-gradient(#8e2de2, #4a00e0); }
+        .c10 { background: radial-gradient(#00c6ff, #0072ff); } 
+        .c20 { background: radial-gradient(#ff416c, #ff4b2b); } 
+        .c50 { background: radial-gradient(#56ab2f, #a8e063); color: black; border-color: rgba(0,0,0,0.3); } 
+        .c100 { background: radial-gradient(#333, #111); border-color: var(--text-gold); color: var(--text-gold); }
+
+        /* --- WHEEL AREA --- */
+        .wheel-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 55vh; 
+            max-height: 55vh; 
+            aspect-ratio: 1 / 1; 
+            margin: 0 auto; 
+            border-radius: 50%; 
+            padding: 12px;
+            background: conic-gradient(from 0deg, #d4af37, #fcf6ba, #d4af37, #fcf6ba, #d4af37);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); 
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+       
+        .wheel-inner {
+            width: 100%;
+            height: 100%;
+            border: 8px solid #d4af37;
+            background: #111;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+        }
+        canvas { width: 100%; height: 100%; border-radius: 50%; display: block; }
+        
+        #pointer { 
+            position: absolute; 
+            top: -15px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 0; height: 0; 
+            border-left: 15px solid transparent; 
+            border-right: 15px solid transparent; 
+            border-top: 40px solid #d32f2f; 
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); 
+            z-index: 5; 
+        }
+
+        /* --- STATUS & HISTORY --- */
+        .status-msg { 
+            margin-top: 20px; 
+            font-family: 'Cinzel', serif; 
+            font-size: 24px; 
+            font-weight: bold; letter-spacing: 4px; 
+            text-align: center; 
+            color: var(--text-gold); 
+            text-transform: uppercase;
+        }
+        .status-msg.locked-msg { color: #d32f2f; }
+
+      #unifiedHistoryBar {
+            display: flex; 
+            gap: 12px; 
+            justify-content: center; 
+            margin-top: 15px; 
+            flex-wrap: nowrap; 
+            width: 100%;
+        }
+
+        /* STATS MIDDLE PANEL */
+        .stats-panel {
+            background: var(--glass-panel);
+            border: var(--border-neon); 
+            border-radius: 12px;
+            padding: 30px 15px; 
+            box-shadow: var(--shadow-soft);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly; 
+            align-items: center;
+            min-height: 280px; 
+            align-self: center;
+            gap: 10px; 
+        }
+        .divider { 
+            width: 80%; 
+            height: 1px; 
+            background: rgba(212, 175, 55, 0.3); 
+            margin: 5px 0; 
+        }
+        .stat-box { text-align: center; width: 100%; }
+        .stat-box small { color: var(--text-gold); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+        .stat-box div { font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: bold; margin-top: 5px; }
+
+        .stat-win { color: #28a745 !important; text-shadow: 0 0 10px rgba(40,167,69,0.3); }
+        .stat-loss { color: #ff1744 !important; text-shadow: 0 0 10px rgba(255,23,68,0.3); }
+        .stat-neutral { color: #fff !important; }
+
+        /* WIN ANIMATION BOX */
+        .win-box { 
+            text-align: center; font-size: 26px; margin: 10px 0; min-height: 40px; 
+            color: #28a745; font-family: 'Orbitron', sans-serif; font-weight: bold; opacity: 0; transition: opacity 0.5s; 
+        }
+        .win-box.show { opacity: 1; animation: pulse 0.5s infinite alternate; }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+        /* BUTTONS */
+        .btn-print { 
+            width: 100%; 
+            padding: 1.2vh; 
+            font-size: 14px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            background: linear-gradient(45deg, #d4af37, #ffd700); 
+            border: none; border-radius: 6px; cursor: pointer; color: #222; 
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3); transition: 0.3s; 
+            margin-top: 1vh !important; 
+        }
+        .btn-print:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(212, 175, 55, 0.5); }
+
+        .logout-btn { 
+            background: #1a0000; color: #d4af37; border: 1px solid #d4af37; 
+            padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 11px; 
+            letter-spacing: 1px; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.5); 
+        }
+        .logout-btn:hover { border-color: #ff1744; color: #fff; background: #d32f2f; box-shadow: 0 0 10px rgba(211, 47, 47, 0.4); }
+
+        .add-money-btn {
+            background: linear-gradient(45deg, #28a745, #218838); color: white; border: none; padding: 8px 15px; margin-right: 15px;
+            border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3); transition: 0.3s; letter-spacing: 1px;
+        }
+        .add-money-btn:hover { transform: scale(1.05); box-shadow: 0 6px 15px rgba(40, 167, 69, 0.5); }
+
+        .fullscreen-btn {
+            margin-top: 10px; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa;
+            padding: 8px 20px; border-radius: 20px; cursor: pointer; font-family: 'Roboto', sans-serif;
+            font-size: 10px; letter-spacing: 2px; transition: all 0.3s; text-transform: uppercase;
+        }
+        .fullscreen-btn:hover { border-color: #d4af37; color: #ffd700; background: rgba(255,255,255,0.05); }
+
+        #coinCanvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 999; }
+        
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        /* --- LAPTOP FLUID HEIGHT FIX (Replaces Transform Scale) --- */
+        @media screen and (max-width: 1400px), screen and (max-height: 800px) {
+            /* Shrink top bar to save space */
+            .top-bar { height: 55px; }
+            .game-hud { height: calc(100vh - 55px); padding: 10px 2vw; gap: 1.5vw; }
+            
+            /* Restrict wheel height */
+            .wheel-container { max-width: 42vh; max-height: 42vh; }
+            
+            /* Tighter panels and cards */
+            .panel { padding: 10px 15px; }
+            .grid-12 { gap: 6px; margin-bottom: 5px; }
+            .group-bet-btn { padding: 2px; font-size: 11px; }
+            
+            /* Smaller chips so they fit at the bottom */
+            .chip { width: 38px; height: 38px; font-size: 13px; }
+            .chip-rack { padding: 8px; margin-top: 5px; }
+            
+            /* Keep history bar clean */
+            .status-msg { margin-top: 10px; font-size: 20px; }
+            #unifiedHistoryBar { margin-top: 10px; }
+            
+            /* Stats panel adjustments */
+            .stats-panel { min-height: 220px; padding: 15px 10px; }
+            .btn-print { padding: 0.8vh; margin-top: 0.5vh !important; }
+        }
+
+        @media (max-width: 950px) {
+            body { overflow-y: auto; height: auto; display: block; }
+            .game-hud { 
+                grid-template-columns: 1fr; 
+                height: auto; 
+                gap: 20px; 
+            }
+            .stats-panel { height: auto; flex-direction: row; justify-content: space-around; padding: 15px; }
+            .divider { width: 1px; height: 50px; margin: 0 20px; }
+            .wheel-container { max-width: 400px; max-height: 400px; }
+            .left-panel { max-height: none; }
+            .grid-12 { max-width: 500px; margin: 0 auto 15px auto; }
+        }
+        
+        /* Mobile Phones (Compact Mode) */
+        @media (max-width: 600px) {
+            .top-bar { padding: 0 10px; gap: 5px; height: 60px; }
+            .top-left { gap: 5px; }
+            .logo-text { font-size: 12px; }
+            .timer-box { font-size: 16px; padding: 4px 10px; }
+            .vol-box { padding: 2px 5px; border-right: none; margin-right: 0; }
+            .vol-box small { font-size: 8px; }
+            .add-money-btn, .logout-btn { padding: 4px 8px; font-size: 9px; margin-right: 5px; }
+            
+            .wheel-container { max-width: 300px; max-height: 300px; }
+            .grid-12 { grid-template-columns: repeat(4, 1fr) 45px; gap: 5px; width: 100%; }
+            .group-bet-btn { font-size: 9px; padding: 2px; }
+            
+            .chip-rack { flex-wrap: wrap; justify-content: center; gap: 8px; padding: 8px; }
+            .chip { width: 35px; height: 35px; font-size: 12px; }
+            
+            .stats-panel { flex-direction: column; gap: 10px; }
+            .divider { width: 100%; height: 1px; margin: 5px 0; }
+        }
+
+        @media print {
+            * { color: black !important; background: transparent !important; text-shadow: none !important; box-shadow: none !important; backdrop-filter: none !important; filter: none !important; }
+            @page { margin: 0; size: 58mm auto; }
+            body { width: 55mm; margin: 0 auto; padding: 0; font-family: 'Courier New', monospace; font-size: 11px; display: block !important; height: auto !important; overflow: visible !important; }
+            body > *:not(.game-hud), .top-bar, .left-panel, .center-panel, .admin-trigger, .win-box, .fullscreen-btn, .chip-rack, .grid-12, #timer, .slip-header, .btn-print, #securityOverlay { display: none !important; }
+            .game-hud, .panel, .slip-panel { display: block !important; width: 100% !important; height: auto !important; border: none !important; margin: 0 !important; padding: 2px !important; grid-template-columns: 1fr !important; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            th { border-bottom: 1px solid #000 !important; font-size: 10px; text-align: left; }
+            td { border-bottom: 1px dashed #666 !important; padding: 3px 0; font-size: 12px; font-weight: bold; }
+        }
+</style>
+</head>
+<body>
+    <script>
+    // 1. DISABLE RIGHT-CLICK
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+
+    // 2. DISABLE KEYBOARD SHORTCUTS (F12, Ctrl+Shift+I, Ctrl+U, etc.)
+    document.onkeydown = function(e) {
+        if (event.keyCode == 123) { // F12
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { // Ctrl+Shift+I
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { // Ctrl+Shift+C
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { // Ctrl+Shift+J
+            return false;
+        }
+        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { // Ctrl+U (View Source)
+            return false;
+        }
+    }
+
+    // 3. DEBUGGER TRAP (Freezes browser if DevTools is opened)
+    setInterval(function() {
+        // This will pause execution if the user opens the console
+        (function(){debugger;})(); 
+    }, 100);
+</script>
+    
+
+    <canvas id="coinCanvas"></canvas>
+
+    <div class="top-bar">
+        <div class="top-left">
+            <button class="logout-btn" onclick="logout()">EXIT</button>
+            <div class="logo-text">ROYAL VEGAS 12</div>
+        </div>
+
+        <div class="timer-box" id="timer">03:00</div>
+        
+      <div class="top-right">
+            <button class="add-money-btn" onclick="window.location.href='funds.html'">+ ADD MONEY</button>
+            <div class="vol-box" style="border-right: 1px solid rgba(212,175,55,0.3); margin-right: 10px; padding-right: 15px;">
+        <small>24H PLAY</small> <br>
+        <span id="dailyPlayDisplay" style="color: #fff;">₹0</span>
+    </div>
+            
+            <div class="vol-box" onclick="window.location.href='passbook.html'">
+                <small>WALLET BALANCE</small> <br>
+                <span id="volDisplay">Loading...</span>
+            </div>
+        </div>
+    </div>
+    
+
+
+    <div class="game-hud">
+        
+        <div class="center-panel">
+            <div class="wheel-container">
+                <div class="wheel-inner">
+                    <div id="pointer"></div>
+                    <canvas id="wheel"></canvas>
+                </div>
+            </div>
+            <div class="status-msg" id="msg">RESULTS</div>
+
+            <div id="unifiedHistoryBar" style="display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap;"></div>
+            
+            <div id="winDisplay" class="win-box"></div> 
+            
+            <button id="fsBtn" class="fullscreen-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
+        </div>
+        <div class="stats-panel">
+            <div class="stat-box" style="margin-bottom: 15px;">
+                <small>SPIN COUNT</small>
+                <div id="liveSpinCount" style="color: #00e676; font-size: 28px;">0</div>
+            </div>
+            <div class="stat-box">
+                <small>TOTAL PLAY</small>
+                <div id="roundTotalPlay">₹0</div>
+            </div>
+            <div class="divider"></div>
+            <div class="stat-box">
+                <small>WIN / LOSS</small>
+                <div id="roundWinLoss" class="stat-neutral">-</div>
+            </div>
+        </div>
+
+        <div class="panel left-panel">
+            <div class="grid-12" id="grid"></div>
+            
+            <div class="chip-rack">
+                <div class="chip c5" onclick="setChip(5, this)">5</div>
+                <div class="chip c10" onclick="setChip(10, this)">10</div>
+                <div class="chip c20" onclick="setChip(20, this)">20</div>
+                <div class="chip c50" onclick="setChip(50, this)">50</div>
+                <div class="chip c100" onclick="setChip(100, this)">100</div>
+            </div>
+          <p style="margin-top: 1.5vh; margin-bottom: 0.5vh; color:#666; font-size:10px; text-align:center; text-transform:uppercase; letter-spacing:1px;">Select Chip & Place Bet</p>
+            
+            <button class="btn-print" onclick="printAndClear()">🖨️ PRINT BETS</button>
+        </div>
+
+    </div>
+
+   
+
+   <script>
+     
+    // --- 1. FIREBASE SETUP ---
+    // 1. FIREBASE SETUP
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMoALpMpplt-vz4dkhaMzh315wwOhPZh4",
+            authDomain: "spin-cards-86e6f.firebaseapp.com",
+            databaseURL: "https://spin-cards-86e6f-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "spin-cards-86e6f",
+            storageBucket: "spin-cards-86e6f.firebasestorage.app",
+            messagingSenderId: "305473056071",
+            appId: "1:305473056071:web:5b278492b216edc5fdb062"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+    // --- 2. CORRECTED AUTH GUARD (Use sessionStorage) ---
+    // This checks the temporary session. If it's missing, go to login.
+    if (sessionStorage.getItem('vegasSession') !== 'active') {
+        window.location.href = 'login.html';
+    }
+
+    // --- 3. CORRECTED LOGOUT FUNCTION ---
+    function logout() {
+        // Clear the session
+        sessionStorage.removeItem('vegasSession');
+        sessionStorage.removeItem('royal_user_id'); // Clear user ID too
+        
+        // Force redirect to login page immediately
+        window.location.replace("login.html");
+    }
+
+    // ... (Rest of your game code below remains the same) ...
+
+        // --- GLOBAL VARIABLES ---
+        let currentRotation = 0;   // Tracks total wheel rotation to prevent rewinding
+        let visualCleanupTimer = null; // Stores the 2-minute timer ID
+        let currentSpinCount = 0;
+     const CARD_MAP = [
+    // Row 1 → JACKS
+    { id: 1, rank: 'J', suit: '♠', color: '#333', img: 'https://deckofcardsapi.com/static/img/JS.png' },
+    { id: 2, rank: 'J', suit: '♥', color: '#d32f2f', img: 'https://deckofcardsapi.com/static/img/JH.png' },
+    { id: 3, rank: 'J', suit: '♣', color: '#333', img: 'https://deckofcardsapi.com/static/img/JC.png' },
+    { id: 4, rank: 'J', suit: '♦', color: '#d32f2f', img: 'https://deckofcardsapi.com/static/img/JD.png' },
+
+    // Row 2 → QUEENS
+    { id: 5, rank: 'Q', suit: '♠', color: '#333', img: 'https://deckofcardsapi.com/static/img/QS.png' },
+    { id: 6, rank: 'Q', suit: '♥', color: '#d32f2f', img: 'https://deckofcardsapi.com/static/img/QH.png' },
+    { id: 7, rank: 'Q', suit: '♣', color: '#333', img: 'https://deckofcardsapi.com/static/img/QC.png' },
+    { id: 8, rank: 'Q', suit: '♦', color: '#d32f2f', img: 'https://deckofcardsapi.com/static/img/QD.png' },
+
+    // Row 3 → KINGS
+    { id: 9, rank: 'K', suit: '♠', color: '#333', img: 'https://deckofcardsapi.com/static/img/KS.png' },
+    { id: 10, rank: 'K', suit: '♥', color: '#d32f2f', img: 'https://deckofcardsapi.com/static/img/KH.png' },
+    { id: 11, rank: 'K', suit: '♣', color: '#333', img: 'https://deckofcardsapi.com/static/img/KC.png' },
+    { id: 12, rank: 'K', suit: '♦', color: '#d32f2f', img: 'https://deckofcardsapi.com/static/img/KD.png' }
+];
+
+
+        
+        // --- 🆕 MIDNIGHT RESET LOGIC (LOCAL STORAGE) ---
+        function checkLocalMidnight() {
+            // 1. Get Current Date in India Time
+            const now = new Date();
+            const formatter = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                year: 'numeric', month: 'numeric', day: 'numeric'
+            });
+            const todayStr = formatter.format(now); // e.g., "25/01/2026"
+            
+            // 2. Compare with Last Saved Date
+            const lastReset = localStorage.getItem('vegas_last_reset_date');
+            
+            if (lastReset !== todayStr) {
+                console.log("🌙 Midnight Detected (Client): Resetting Local Volume");
+                
+                // 3. Reset Balance & Transactions
+                localStorage.setItem('vegas_balance', '0'); 
+                localStorage.setItem('vegas_txns', '[]'); 
+                
+                // 4. Update Date
+                localStorage.setItem('vegas_last_reset_date', todayStr);
+                
+                // 5. Refresh Display immediately if it exists
+                if(typeof updateLocalDisplay === 'function') updateLocalDisplay();
+            }
+        }
+        // Run immediately on load
+        checkLocalMidnight();
+        // Run every 60 seconds (so it resets automatically while the game is open)
+        setInterval(checkLocalMidnight, 60000);
+        
+        
+     // IDENTIFY PLAYER (Use the Phone Number from Login)
+      let clientID = sessionStorage.getItem('royal_user_id'); // <-- CHANGED HERE
+      if(!clientID) {
+          clientID = 'Guest-' + Math.floor(Math.random() * 1000);
+      }
+      console.log("Player Logged In As: " + clientID); // <-- Added so you can verify
+
+        function logout() {
+            sessionStorage.removeItem('vegasSession');
+            window.location.reload(); // <--- Add this (Restarts game)
+        }
+
+        // --- 3. UI & GRAPHICS ---
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const jCanvas = document.getElementById('coinCanvas');
+        const jCtx = jCanvas.getContext('2d');
+        const sectors = 12;
+        const arc = (Math.PI * 2) / sectors;
+        function drawWheel() {
+    canvas.width = 1000;
+    canvas.height = 1000;
+
+    const centerX = 500;
+    const centerY = 500;
+    const radius = 480;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const colors = ["#8b0000", "#111111"];
+
+    for (let i = 0; i < sectors; i++) {
+        const angle = i * arc;
+        const card = CARD_MAP[i];
+
+        // 1. Draw Slice
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angle, angle + arc);
+        ctx.closePath();
+
+        ctx.fillStyle = colors[i % 2];
+        ctx.fill();
+
+        // 2. Draw Gold Border
+        ctx.strokeStyle = "#ffd700";
+        ctx.lineWidth = 6;
+        ctx.stroke();
+
+        // 3. Draw Text
+        ctx.save();
+        
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle + arc / 2); // Rotate to point down the middle of the slice
+        ctx.translate(330, 0);       // Move 330px outwards toward the edge
+        ctx.rotate(-(angle + arc / 2));
+
+        // ❌ DELETED the reverse rotation here so it stays inside the slice!
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = (colors[i % 2] === "#111111") ? "#ffd700" : "#ffffff";
+
+        ctx.font = "bold 80px Cinzel";
+        ctx.fillText(card.rank, 0, -20);
+
+        ctx.font = "bold 90px Cinzel";  // ← suit bigger
+ctx.fillText(card.suit, 0, 60);
+
+        ctx.restore();
+    }
+
+    // Draw Center Hubs
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 80, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffd700";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 40, 0, Math.PI * 2);
+    ctx.fillStyle = "#333";
+    ctx.fill();
+}
+// Draw immediately
+drawWheel(); 
+
+// Redraw when the custom font finishes loading
+document.fonts.ready.then(() => {
+    drawWheel();
+});
+
+       // --- 4. DATA & STATE ---
+        // NEW: Pull bets from memory so they survive page refreshes!
+        let bets = JSON.parse(localStorage.getItem('vegas_active_bets') || '{}'); 
+        let cycleBets = JSON.parse(localStorage.getItem('vegas_cycle_bets') || '{}');
+        let activeChip = 0;
+        let betsLocked = false;
+        let isSpinning = false;
+        let lastServerStatus = "";
+        if (clientID) {
+    db.ref(`current_round_bets/${clientID}`).once('value', (snap) => {
+        // If the server already wiped the bets for a new round, wipe local storage too
+        if (!snap.exists() && Object.keys(bets).length > 0) {
+            console.log("Cleared ghost bets from previous round.");
+            bets = {};
+            cycleBets = {};
+            localStorage.setItem('vegas_active_bets', '{}');
+            localStorage.setItem('vegas_cycle_bets', '{}');
+            renderSlip();
+        }
+    });
+}
+
+       // 🟢 GLOBAL VARIABLES
+        let liveBalance = 0; 
+        let dailyPlayAmount = 0; // 🔥 ADDED: Must exist globally
+        let dailyBillCount = 0;  // 🔥 ADDED: Must exist globally
+
+       // --- GLOBAL HISTORY SYNC (RESULT & JACKPOT QUEUE) ---
+        // Reduced from 10 to 8
+        const historyRef = db.ref('results_history').limitToLast(7);
+
+        historyRef.on('value', (snapshot) => {
+            const container = document.getElementById('unifiedHistoryBar');
+            container.innerHTML = ''; 
+            
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const historyArray = Object.values(data).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                
+                historyArray.forEach(item => {
+                    let group = document.createElement('div');
+                    group.style.cssText = "display: flex; flex-direction: column; align-items: center; gap: 4px; animation: popIn 0.3s ease-out;";
+                    
+                    let rDiv = document.createElement('div');
+                    let cardIndex = parseInt(item.result) - 1;
+                    let card = CARD_MAP[cardIndex];
+                    
+                    // Increased card dimensions and font size
+                    rDiv.style.cssText = `
+                        width: 54px; height: 72px; 
+                        background: #fff; border: 2px solid var(--text-gold); 
+                        border-radius: 6px; display: flex; flex-direction: column; 
+                        align-items: center; justify-content: center; 
+                        font-weight: bold; font-size: 20px; color: ${card ? card.color : '#333'};
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    `;
+                    
+                    if (card) {
+                        rDiv.innerHTML = `<span>${card.rank}</span><span style="font-size:16px;">${card.suit}</span>`;
+                    } else {
+                        rDiv.innerText = item.result; 
+                    }
+
+                    let mDiv = document.createElement('div');
+                    let multi = item.multiplier || 1; 
+                    
+                    // Increased multiplier box dimensions and font size
+                    mDiv.style.cssText = `
+                        width: 54px; height: 26px; 
+                        border-radius: 4px; display: flex; 
+                        align-items: center; justify-content: center; 
+                        font-size: 13px; font-weight: bold; font-family: 'Orbitron', sans-serif;
+                    `;
+                    
+                    if (multi === 1) {
+                        mDiv.innerHTML = `N`;
+                        mDiv.style.background = "#ccc";
+                        mDiv.style.color = "#555";
+                    } else {
+                        mDiv.innerHTML = `x${multi}`;
+                        mDiv.style.background = "#d32f2f";
+                        mDiv.style.color = "#fff";
+                    }
+                    
+                    group.appendChild(rDiv);
+                    group.appendChild(mDiv);
+                    container.appendChild(group);
+                });
+            }
+        });
+
+        // 🟢 NEW: SYNC BALANCE & DAILY STATS FROM FIREBASE (Realtime)
+        if (clientID) {
+            // 1. Sync Wallet Balance
+            db.ref('users/' + clientID + '/balance').on('value', (snapshot) => {
+                liveBalance = snapshot.val() || 0;
+                
+                const el = document.getElementById('volDisplay');
+                el.innerText = '₹' + liveBalance.toLocaleString();
+                
+                if (liveBalance > 0) el.parentElement.classList.add('vol-positive');
+                else el.parentElement.classList.remove('vol-positive');
+            });
+
+            // 2. 🔥 Sync 24-Hour Play Amount & Bill Count
+            db.ref('user_daily_stats/' + clientID).on('value', (snapshot) => {
+                let data = snapshot.val() || { play: 0, bills: 0, date: "" };
+                
+                // Get today's date in India Standard Time
+                const todayStr = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata' }).format(new Date());
+
+                // Midnight Reset: If the saved date doesn't match today, reset to 0
+                if (data.date !== todayStr) {
+                    data = { play: 0, bills: 0, date: todayStr };
+                    db.ref('user_daily_stats/' + clientID).set(data);
+                }
+
+                dailyPlayAmount = data.play;
+                dailyBillCount = data.bills;
+                
+                // Update UI Header
+                document.getElementById('dailyPlayDisplay').innerText = '₹' + dailyPlayAmount.toLocaleString();
+            });
+        }
+      
+    
+
+        // 🟢 NEW: SYNC BALANCE FROM FIREBASE (Realtime)
+        // This ensures the game always shows the money added by Admin in ids.html
+        if (clientID) {
+            db.ref('users/' + clientID + '/balance').on('value', (snapshot) => {
+                liveBalance = snapshot.val() || 0;
+                
+                // Update UI
+                const el = document.getElementById('volDisplay');
+                el.innerText = '₹' + liveBalance.toLocaleString();
+                
+                // Update Color
+                if (liveBalance > 0) el.parentElement.classList.add('vol-positive');
+                else el.parentElement.classList.remove('vol-positive');
+            });
+        }
+        
+        // --- 5. CENTRALIZED SERVER SYNCHRONIZATION ---
+        db.ref('game_state').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if(!data) return;
+
+            // Update UI Spin Count
+            // In index.html - inside the game_state listener:
+if (data.spin_count !== undefined) { // <-- Change from if (data.spin_count)
+    currentSpinCount = data.spin_count;
+    document.getElementById('liveSpinCount').innerText = currentSpinCount;
+}
+
+            // A. Update Timer
+            let seconds = data.time_left;
+            let m = Math.floor(seconds / 60).toString().padStart(2,'0');
+            let s = (seconds % 60).toString().padStart(2,'0');
+            document.getElementById('timer').innerText = `${m}:${s}`;
+
+           // B. Unlock/Lock based on Timer (10s Buffer)
+            if (data.status === "BETTING") {
+                if (data.time_left > 10) {
+                    // Open bets if we have more than 10 seconds
+                    if (betsLocked && !isSpinning) unlockBets(); 
+                } else {
+                    // Lock bets if 10 seconds or less remain
+                    if (!betsLocked) {
+                        lockBets();
+                        document.getElementById('msg').innerText = "BETS CLOSED";
+                    }
+                }
+            }
+            // C. Handle Locking
+            if(data.status === "SPINNING") {
+                if (!isSpinning && !document.getElementById('grid').classList.contains('locked')) {
+                    lockBets();
+                    document.getElementById('msg').innerText = "SPIN IN PROGRESS...";
+                }
+            }
+
+            // D. Trigger Spin
+           // In index.html
+if(data.status === "SPINNING" && lastServerStatus !== "SPINNING") {
+    performSpin(data.result, data.multiplier);
+}
+
+            lastServerStatus = data.status;
+        });
+// 🟢 NEW: Calculate and update the TOTAL PLAY UI for the current round
+        function updateRoundStats() {
+            let totalRoundPlay = 0;
+            for (let key in cycleBets) {
+                totalRoundPlay += cycleBets[key];
+            }
+            document.getElementById('roundTotalPlay').innerText = '₹' + totalRoundPlay.toLocaleString();
+        }
+       
+
+      
+       
+       
+
+     function updateWallet(amount, description) {
+    if (!clientID) return;
+    const numAmt = parseFloat(amount); // Force strict number
+
+    // 1. Update Balance in Database
+    db.ref('users/' + clientID + '/balance').transaction((currentBal) => {
+        return parseFloat(currentBal || 0) + numAmt; // Prevents string bugs
+    }, (error, committed, snapshot) => {
+        if (error) {
+            console.error("Wallet Error:", error);
+        } else if (committed) {
+            // 2. Add to History (Passbook)
+           db.ref('users/' + clientID + '/transactions').push({
+    amount: numAmt,
+    balance: snapshot.val(),
+    description: description,
+    date: new Date().toLocaleString(),
+    billNo: dailyBillCount,
+    spin_count: currentSpinCount + 1,  // 🟢 FIXED: Logs the UPCOMING spin
+    timestamp: Date.now()              // 🟢 Added for the 48-hour auto-cleanup
+});
+
+            // Get standard timezone string for daily checks
+            const todayStr = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata' }).format(new Date());
+
+            // 3. Update House Stats & Personal Daily Stats
+            if (numAmt < 0) {
+                // --- A. Bet Placed ---
+                
+                // Add to Global House Volume
+                db.ref('house_stats/daily_volume').transaction(vol => parseFloat(vol || 0) + Math.abs(numAmt));
+                
+                // Add to User's 24H Play Amount
+                dailyPlayAmount += Math.abs(numAmt);
+                db.ref('user_daily_stats/' + clientID).update({
+                    play: dailyPlayAmount,
+                    date: todayStr
+                });
+
+            } else if (description.includes("Cancelled")) {
+                // --- B. Bet Cancelled ---
+                
+                // Subtract from Global House Volume
+                db.ref('house_stats/daily_volume').transaction(vol => {
+                    let newVol = parseFloat(vol || 0) - Math.abs(numAmt);
+                    return newVol < 0 ? 0 : newVol; // Safety check
+                });
+                
+                // Subtract from User's 24H Play Amount
+                dailyPlayAmount -= Math.abs(numAmt);
+                if (dailyPlayAmount < 0) dailyPlayAmount = 0; // Safety check
+                
+                db.ref('user_daily_stats/' + clientID).update({
+                    play: dailyPlayAmount,
+                    date: todayStr
+                });
+            }
+        }
+    });
+}
+
+         
+               
+
+       function saveStorage() {
+            localStorage.setItem('vegas_active_bets', JSON.stringify(bets));
+            localStorage.setItem('vegas_cycle_bets', JSON.stringify(cycleBets));
+            db.ref(`current_round_bets/${clientID}`).set(cycleBets);
+            updateRoundStats(); // <--- ADD THIS LINE
+        }
+
+const grid = document.getElementById('grid');
+grid.innerHTML = ''; // Clear existing
+
+CARD_MAP.forEach((card, index) => {
+    let btn = document.createElement('div');
+    btn.className = 'num-btn';
+    btn.style.background = '#fff';
+    btn.style.position = 'relative'; 
+    
+    let img = document.createElement('img');
+    img.src = card.img;
+    img.style.cssText = "width: 100%; height: 100%; object-fit: contain; pointer-events: auto; cursor: pointer;";
+    
+    let betBadge = document.createElement('div');
+    betBadge.id = `badge-${card.id}`;
+   betBadge.style.cssText = `
+position:absolute;
+top:-6px;
+right:-6px;
+font-size:14px;
+font-weight:bold;
+background:#28a745;
+color:#fff;
+padding:6px 10px;
+border-radius:12px;
+box-shadow:0 3px 6px rgba(0,0,0,0.4);
+z-index:10;
+border:2px solid #fff;
+display:none;
+min-width:38px;
+text-align:center;
+`;
+    
+    let minusBtn = document.createElement('div');
+    minusBtn.id = `minus-${card.id}`;
+    minusBtn.innerHTML = "✖"; 
+    minusBtn.style.cssText = "position:absolute; bottom:-8px; left:-8px; font-size:12px; font-weight:bold; background:#ff1744; color:#fff; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:50%; box-shadow: 0 2px 5px rgba(0,0,0,0.4); z-index:10; border: 2px solid #fff; cursor: pointer; display: none;";
+
+    img.onclick = () => {
+        if(!activeChip || betsLocked) return;
+        if (activeChip > liveBalance) { alert("Insufficient Balance!"); return; }
+
+        updateWallet(-activeChip, `Bet on ${card.rank}${card.suit}`);
+        bets[card.id] = (bets[card.id] || 0) + activeChip;
+        cycleBets[card.id] = (cycleBets[card.id] || 0) + activeChip;
+        saveStorage();
+        
+        betBadge.innerText = `₹${bets[card.id]}`;
+        betBadge.style.display = 'block';
+        minusBtn.style.display = 'flex';
+    };
+
+    minusBtn.onclick = (e) => {
+        e.stopPropagation(); 
+        if(betsLocked) return;
+        
+        let amt = bets[card.id];
+        if(!amt) return; 
+        
+        updateWallet(amt, `Cancelled Bet on ${card.rank}${card.suit}`);
+        delete bets[card.id]; 
+        if(cycleBets[card.id]) {
+            cycleBets[card.id] -= amt;
+            if(cycleBets[card.id] <= 0) delete cycleBets[card.id];
+        }
+        saveStorage();
+        
+        betBadge.style.display = 'none';
+        minusBtn.style.display = 'none';
+    };
+    
+    if(bets[card.id]) {
+        betBadge.innerText = `₹${bets[card.id]}`;
+        betBadge.style.display = 'block';
+        minusBtn.style.display = 'flex';
+    }
+
+    btn.appendChild(img);
+    btn.appendChild(betBadge);
+    btn.appendChild(minusBtn);
+    grid.appendChild(btn);
+
+    // ✅ ADD ROW BUTTON (ALL J, ALL Q, ALL K) AT THE END OF EVERY ROW
+    if ((index + 1) % 4 === 0) {
+        let rowBtn = document.createElement('button');
+        rowBtn.className = 'group-bet-btn';
+        rowBtn.innerHTML = `ALL<br><span style="font-size:16px;">${card.rank}</span>`;
+        rowBtn.onclick = () => placeGroupBet('rank', card.rank);
+        grid.appendChild(rowBtn);
+    }
+});
+
+// ✅ ADD COL BUTTONS (ALL SPADE, ALL HEART, ALL CLUB, ALL DIAMOND)
+const suits = ['♠', '♥', '♣', '♦'];
+const suitColors = ['#333', '#d32f2f', '#333', '#d32f2f'];
+suits.forEach((suit, i) => {
+    let colBtn = document.createElement('button');
+    colBtn.className = 'group-bet-btn';
+    colBtn.style.color = suitColors[i];
+    colBtn.innerHTML = `ALL<br><span style="font-size:20px;">${suit}</span>`;
+    colBtn.onclick = () => placeGroupBet('suit', suit);
+    grid.appendChild(colBtn);
+});
+
+// Empty div for the bottom right corner of the grid to keep spacing perfect
+grid.appendChild(document.createElement('div'));
+// Function to place a bet on an entire Row or Column
+function placeGroupBet(type, value) {
+    if (!activeChip || betsLocked) return;
+    
+    // Find all matching cards (e.g. all 'J' or all '♠')
+    let matchingCards = CARD_MAP.filter(c => c[type] === value);
+    
+    // Check if the user has enough money for 3 or 4 bets at once
+    let totalCost = activeChip * matchingCards.length;
+    if (totalCost > liveBalance) {
+        alert(`Insufficient Balance! You need ₹${totalCost} for this group bet.`);
+        return;
+    }
+
+    // Deduct total cost once
+    updateWallet(-totalCost, `Group Bet on ALL ${value}`);
+
+    // Apply the bet to each matching card
+    matchingCards.forEach(card => {
+        bets[card.id] = (bets[card.id] || 0) + activeChip;
+        cycleBets[card.id] = (cycleBets[card.id] || 0) + activeChip;
+        
+        // Update UI
+        let betBadge = document.getElementById(`badge-${card.id}`);
+        let minusBtn = document.getElementById(`minus-${card.id}`);
+        if (betBadge && minusBtn) {
+            betBadge.innerText = `₹${bets[card.id]}`;
+            betBadge.style.display = 'block';
+            minusBtn.style.display = 'flex';
+        }
+    });
+    
+    saveStorage();
+}
+       
+    
+    // Inject the real card image
+    
+    
+    // btn.onclick = () => {
+    //     if(!activeChip || betsLocked) return;
+        
+    //     if (activeChip > liveBalance) {
+    //         alert("Insufficient Balance!");
+    //         return;
+    //     }
+
+    //     updateWallet(-activeChip, `Bet on ${card.rank}${card.suit}`);
+    //     bets[card.id] = (bets[card.id] || 0) + activeChip;
+    //     cycleBets[card.id] = (cycleBets[card.id] || 0) + activeChip;
+    //     saveStorage();
+        
+    //     // Visual feedback (Looks like a chip on the card)
+    //     let betBadge = document.createElement('div');
+    //     betBadge.innerText = `₹${activeChip}`;
+    //     betBadge.style.cssText = "position:absolute; bottom:-5px; right:-5px; font-size:11px; font-weight:bold; background:#28a745; color:#fff; padding:5px; border-radius:50%; box-shadow: 0 2px 5px rgba(0,0,0,0.4); z-index:10; border: 2px dashed #fff;";
+    //     btn.style.position = 'relative';
+    //     btn.appendChild(betBadge);
+    // };
+    
+    // grid.appendChild(btn);
+
+   
+
+        function setChip(val, el) {
+            if(betsLocked) return; activeChip = val;
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function removeBet(n) { 
+            if(betsLocked) return; 
+            let amt = bets[n];
+            if(!amt || !cycleBets[n] || cycleBets[n] < amt) return;
+            
+            // 1. REFUND MONEY (Positive Amount)
+            updateWallet(amt, `Cancelled Bet #${n}`);
+
+            // 2. Update Game State
+            delete bets[n]; 
+            if(cycleBets[n]) {
+                cycleBets[n] -= amt;
+                if(cycleBets[n] <= 0) delete cycleBets[n];
+            }
+            saveStorage();
+            renderSlip(); 
+        }
+
+       function renderSlip() {
+    // Disabled: We removed the right panel, so we don't need to render the slip anymore!
+}
+
+       function printAndClear() {
+    // 1. Check if there are actually bets placed
+    if(Object.keys(bets).length === 0) {
+        alert("⚠️ Place some bets first before printing!");
+        return;
+    }
+
+    let confirmAction = confirm("CONFIRM BETS?\nClick OK to print your receipt.");
+    if (!confirmAction) return; 
+
+
+    // ------------------------------------------------------------------
+
+    // 2. Build the Receipt HTML (Added 'game-hud' to bypass print CSS blocks)
+    let receiptHTML = `
+    <div class="game-hud" style="display: block !important; background: white; font-family: monospace; color: black; padding: 20px; width: 100%; max-width: 300px; margin: 0 auto;">
+        <div class="game-hud" style="display: block !important; font-family: monospace; color: black; padding: 20px; width: 100%; max-width: 300px; margin: 0 auto; grid-template-columns: 1fr;">
+            <h2 style="text-align: center; margin-bottom: 5px; color: black;">ROYAL VEGAS 12</h2>
+            <p style="text-align: center; margin-top: 0; font-size: 12px; color: black;">Date: ${new Date().toLocaleString()}</p>
+            <p style="margin-bottom: 2px; color: black;"><strong>Player ID:</strong> ${clientID}</p>
+            <p style="margin-bottom: 5px; color: black;"><strong>Bill No:</strong> ${dailyBillCount}</p> <hr style="border-top: 1px dashed black;">
+           <p style="margin-bottom: 5px; color: black;"><strong>Spin No:</strong> ${currentSpinCount + 1}</p> <hr style="border-top: 1px dashed black;">
+                <tr>
+                    <th style="padding-bottom: 5px; color: black;">Bet On</th>
+                    <th style="text-align:right; padding-bottom: 5px; color: black;">Amount</th>
+                </tr>
+    `;
+    
+    let total = 0;
+    for (let num in bets) {
+        let card = CARD_MAP[parseInt(num) - 1];
+        let amt = bets[num];
+        total += amt;
+        receiptHTML += `<tr><td style="padding: 3px 0;">${card.rank} ${card.suit}</td><td style="text-align:right; padding: 3px 0;">₹${amt}</td></tr>`;
+    }
+    
+    receiptHTML += `
+            </table>
+            <hr style="border-top: 1px dashed black;">
+            <h3 style="text-align: right; margin-top: 10px;">Total: ₹${total}</h3>
+            <p style="text-align: center; font-size: 10px; margin-top: 20px;">Keep this slip safe until round ends.</p>
+        </div>
+    `;
+
+    // 3. Temporarily inject receipt, hide the game, print, and restore
+    let originalBody = document.body.innerHTML;
+    document.body.innerHTML = receiptHTML;
+    
+    window.print();
+
+    // 4. Restore Game & Clear Local Board
+    document.body.innerHTML = originalBody;
+    bets = {}; 
+    localStorage.setItem('vegas_active_bets', '{}'); 
+    
+    // Because we overwrote the body, we need to reload the page to restore listeners safely
+    // Don't worry, cycleBets (payouts) are safely saved in localStorage and Firebase!
+    window.location.reload(); 
+}
+   
+
+// NEW: Clears all badges and buttons off the board visually
+function clearVisualBets() {
+    document.querySelectorAll('[id^="badge-"]').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('[id^="minus-"]').forEach(el => el.style.display = 'none');
+}
+        // --- GAMEPLAY ACTIONS ---
+        function lockBets() {
+            if(betsLocked) return; betsLocked = true;
+            document.getElementById('grid').classList.add('locked');
+            const msg = document.getElementById('msg'); msg.innerText = "BETS CLOSED"; msg.classList.add('locked-msg');
+        }
+        function unlockBets() {
+            betsLocked = false;
+            document.getElementById('grid').classList.remove('locked');
+            const msg = document.getElementById('msg'); msg.innerText = "Results"; msg.classList.remove('locked-msg');
+            bets = {}; cycleBets = {}; 
+            localStorage.setItem('vegas_active_bets', '{}');
+            localStorage.setItem('vegas_cycle_bets', '{}');
+            renderSlip();
+            clearVisualBets();
+            
+            // 🟢 NEW: RESET STATS UI FOR NEW ROUND
+            updateRoundStats(); 
+            const wlBox = document.getElementById('roundWinLoss');
+            wlBox.innerText = "-";
+            wlBox.className = "stat-neutral";
+        }
+
+        function performSpin(serverResult, serverMulti) {
+            if(isSpinning) return;
+            isSpinning = true;
+            lockBets();
+
+            // 1. CLEAR PREVIOUS 2-MINUTE TIMER (If new spin starts early)
+            if (visualCleanupTimer) {
+                clearTimeout(visualCleanupTimer);
+                visualCleanupTimer = null;
+                document.getElementById('winDisplay').classList.remove('show'); // Hide old win immediately
+            }
+
+            // 2. CALCULATE ROTATION (Additive Math)
+            const deg = 360 / 12;
+            const targetAngle = 270 - ((serverResult - 1) * deg) - (deg / 2);
+            
+            const extraSpins = 3600; 
+            let nextRotation = currentRotation + extraSpins + (targetAngle - (currentRotation % 360));
+            
+            if (nextRotation <= currentRotation) nextRotation += 360;
+            
+            currentRotation = nextRotation; // Save for next time
+
+            // 3. ANIMATE
+            canvas.style.transition = 'transform 8s cubic-bezier(0.1, 0, 0.1, 1)';
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            
+            setTimeout(() => {
+                let winningCard = CARD_MAP[serverResult - 1];
+                let totalWin = 0;
+                let winKey = String(serverResult); 
+
+                // Calculate win amount
+                if(cycleBets[winKey] && cycleBets[winKey] > 0) {
+                    totalWin = cycleBets[winKey] * 10 * serverMulti;
+                }
+
+                // 🟢 NEW: Format the text for the #msg element
+                let jackpotText = (serverMulti > 1) ? ` (JACKPOT ${serverMulti}X!)` : "";
+                let msgEl = document.getElementById('msg');
+                
+                if (totalWin > 0) {
+                    // Won: Show WINNER in Green
+                    msgEl.innerHTML = `<span style="color:#28a745;">WINNER: ${winningCard.rank} ${winningCard.suit} | ₹${totalWin.toLocaleString()}${jackpotText}</span>`;
+                } else if (serverMulti > 1) {
+                    // Lost, but there was a Jackpot
+                    msgEl.innerHTML = `<span style="color:${winningCard.color}">RESULT: ${winningCard.rank} ${winningCard.suit}</span> <span style="color:#d32f2f; font-size:16px;">${jackpotText}</span>`;
+                } else {
+                    // Normal Loss
+                    msgEl.innerHTML = `<span style="color:${winningCard.color}">RESULT: ${winningCard.rank} ${winningCard.suit}</span>`;
+                }
+
+                // Hide the old floating box
+                document.getElementById('winDisplay').classList.remove('show');
+
+                if(serverMulti > 1) triggerRain();
+
+                // Clear bets
+                bets = {};
+                localStorage.setItem('vegas_active_bets', '{}');
+                renderSlip();
+                clearVisualBets();
+               
+                // 🟢 NEW: CALCULATE NET WIN/LOSS FOR THE ROUND
+                let totalRoundPlay = 0;
+                for (let key in cycleBets) {
+                    totalRoundPlay += cycleBets[key];
+                }
+
+                let netResult = totalWin - totalRoundPlay;
+                const wlBox = document.getElementById('roundWinLoss');
+
+                if (totalRoundPlay === 0) {
+                    wlBox.innerText = "-";
+                    wlBox.className = "stat-neutral";
+                } else if (netResult > 0) {
+                    wlBox.innerText = "+₹" + netResult.toLocaleString();
+                    wlBox.className = "stat-win"; // Turns Green
+                } else if (netResult < 0) {
+                    wlBox.innerText = "-₹" + Math.abs(netResult).toLocaleString();
+                    wlBox.className = "stat-loss"; // Turns Red
+                } else {
+                    wlBox.innerText = "₹0";
+                    wlBox.className = "stat-neutral"; // Turns White
+                }
+
+                // 4. UNLOCK LOGIC (Game Loop continues after 4s)
+                setTimeout(() => {
+                    isSpinning = false;
+                }, 4000);
+
+              // 5. SET NEW 2-MINUTE CLEANUP TIMER
+                visualCleanupTimer = setTimeout(() => {
+                    document.getElementById('msg').innerHTML = "RESULTS";
+                    document.getElementById('msg').style.color = "var(--text-gold)";
+                }, 120000);
+
+            }, 8000);
+                }
+
+        // --- VISUAL FX ---
+        let coins = [];
+        class Coin { 
+            constructor() { 
+                this.x = Math.random() * window.innerWidth; 
+                this.y = -50; 
+                this.vel = Math.random() * 4 + 2; 
+            } 
+            update() { 
+                this.y += this.vel; 
+                jCtx.beginPath(); 
+                jCtx.fillStyle = '#ffd700'; 
+                jCtx.arc(this.x, this.y, 8, 0, Math.PI*2); 
+                jCtx.fill(); 
+            } 
+        }
+
+        function triggerRain() {
+            jCanvas.width = window.innerWidth; 
+            jCanvas.height = window.innerHeight;
+            coins = Array.from({length: 300}, () => new Coin());
+            
+            function anim() { 
+                jCtx.clearRect(0,0,jCanvas.width, jCanvas.height); 
+                coins.forEach(c => c.update()); 
+                if(coins.some(c => c.y < window.innerHeight + 100)) {
+                    requestAnimationFrame(anim); 
+                } else {
+                    jCtx.clearRect(0,0,jCanvas.width, jCanvas.height); 
+                }
+            }
+            anim();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function unlockGame() {
+            const p = document.getElementById('gamePass').value;
+            if(p === 'qsc123') {
+                sessionStorage.setItem('vegasSession', 'active'); 
+                document.getElementById('securityOverlay').style.display = 'none';
+            } else {
+                document.getElementById('passError').style.display = 'block';
+            }
+        }
+
+        // Detect when printing finishes and try to restore fullscreen
+        window.addEventListener("afterprint", (event) => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch((e) => {
+                    console.log("User must click to restore fullscreen");
+                });
+            }
+        });
+        
+    </script>
+    
+</body>
+</html>
