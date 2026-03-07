@@ -32,6 +32,27 @@ console.log("✅ ROYAL VEGAS SERVER - CENTRALIZED SYNC STARTED");
 console.log("-----------------------------------------------");
 
 // --- 3. MAIN SERVER LOOP (Runs every 1 second) ---
+setInterval(async () => {
+    // A. Daily Reset Check (Modified for Midnight Reset)
+    await checkDailyReset();
+
+    // B. Betting Phase
+    if (status === "BETTING") {
+        timer--;
+        
+        // Broadcast time to all clients (PC & Mobile)
+        update(ref(db, 'game_state'), {
+            time_left: timer,
+            status: "BETTING"
+        }).catch(e => console.error("Sync Error:", e));
+
+        // C. Trigger Spin
+       if (timer <= 0 && status === "BETTING") {
+    await runSpinSequence();
+}
+    }
+}, 1000); // <-- 1 Second Timer for Game Loop
+
 // --- 7. AUTOMATIC 48-HOUR PASSBOOK CLEANUP ---
 // Runs every 1 hour (3600000 ms) in the background
 setInterval(async () => {
@@ -72,7 +93,9 @@ setInterval(async () => {
     } catch (e) {
         console.error("Cleanup Error:", e);
     }
-}, 60 * 60 * 1000); // 1 Hour Interval
+}, 60 * 60 * 1000); // <-- 1 Hour Timer for Passbook Cleanup
+
+
 
 // --- 4. SPIN LOGIC ---
 async function runSpinSequence() {
@@ -309,12 +332,12 @@ async function checkDailyReset() {
 
 /// --- 6. RENDER DEPLOYMENT SERVER ---
 const appServer = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 const path = require('path');
 
 // 1. Point exactly to your frontend folder!
 // The ".." tells the server to step back one folder, then open SPINCARDSFRONTEND
-const frontendPath = path.join(__dirname, '../SPINCARDSFRONTEND');
+const frontendPath = path.join(__dirname, 'SpinCardsFrontend');
 
 // 2. Tell Express to serve files from this new path
 appServer.use(express.static(frontendPath));
