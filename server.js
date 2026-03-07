@@ -26,31 +26,53 @@ const CARD_MAP = [
 const CYCLE_TIME = 180; // 3 Minutes
 let timer = CYCLE_TIME;
 let status = "BETTING"; 
+let dailySpinCount = 0;
 
 console.log("✅ ROYAL VEGAS SERVER - CENTRALIZED SYNC STARTED");
 console.log("-----------------------------------------------");
 
 // --- 3. MAIN SERVER LOOP (Runs every 1 second) ---
+// --- 7. AUTOMATIC 48-HOUR PASSBOOK CLEANUP ---
+// Runs every 1 hour (3600000 ms) in the background
 setInterval(async () => {
-    // A. Daily Reset Check (Modified for Midnight Reset)
-    checkDailyReset();
+    try {
+        console.log("🧹 Running 48-Hour Passbook Cleanup...");
+        const usersSnap = await get(ref(db, 'users'));
+        if (!usersSnap.exists()) return;
 
-    // B. Betting Phase
-    if (status === "BETTING") {
-        timer--;
-        
-        // Broadcast time to all clients (PC & Mobile)
-        update(ref(db, 'game_state'), {
-            time_left: timer,
-            status: "BETTING"
-        }).catch(e => console.error("Sync Error:", e));
+        const users = usersSnap.val();
+        const cutoffTime = Date.now() - (48 * 60 * 60 * 1000); // Exact time 48 hours ago
 
-        // C. Trigger Spin
-        if (timer <= 0) {
-            await runSpinSequence();
+        // Loop through all users in the database
+        for (const uid of Object.keys(users)) {
+            const txnsRef = ref(db, `users/${uid}/transactions`);
+            const txnsSnap = await get(txnsRef);
+            
+            if (txnsSnap.exists()) {
+                let deletedCount = 0;
+                
+                txnsSnap.forEach(childSnap => {
+                    const txn = childSnap.val();
+                    
+                    // Look for our exact timestamp, otherwise try to read the string date
+                    let txnTime = txn.timestamp || Date.parse(txn.date);
+
+                    // If the transaction is older than 48 hours, delete it!
+                    if (txnTime && txnTime < cutoffTime) {
+                        set(ref(db, `users/${uid}/transactions/${childSnap.key}`), null);
+                        deletedCount++;
+                    }
+                });
+                
+                if (deletedCount > 0) {
+                    console.log(`🗑️ Deleted ${deletedCount} old passbook entries for User: ${uid}`);
+                }
+            }
         }
+    } catch (e) {
+        console.error("Cleanup Error:", e);
     }
-}, 1000);
+}, 60 * 60 * 1000); // 1 Hour Interval
 
 // --- 4. SPIN LOGIC ---
 async function runSpinSequence() {
@@ -116,12 +138,21 @@ async function runSpinSequence() {
         }
     } catch (e) { console.error("Error with Rigging/Bias:", e); }
 
-    // B. BROADCAST RESULT TO CLIENTS (STARTS ANIMATION INSTANTLY)
+   // B. BROADCAST RESULT TO CLIENTS (STARTS ANIMATION INSTANTLY)
+    
+    dailySpinCount++; // 🚨 Increment the spin count!
+
+    // Save it to the database so it survives server restarts
+    update(ref(db, 'house_stats'), { 
+        daily_spin_count: dailySpinCount 
+    });
+
     update(ref(db, 'game_state'), {
         status: "SPINNING",
         result: finalResult,
         multiplier: finalMulti,
-        time_left: 0
+        time_left: 0,
+        spin_count: dailySpinCount // 🟢 Broadcast to clients
     });
 
     console.log("⏳ Wheel Spinning... Waiting 8 seconds before updating history/volume...");
@@ -133,13 +164,15 @@ async function runSpinSequence() {
         
         // 1. SAVE HISTORY (QUEUE) - Happens when wheel stops
         // 1. SAVE HISTORY (QUEUE) - Happens when wheel stops
+        // 1. SAVE HISTORY (QUEUE) - Happens when wheel stops
         console.log("📝 Updating History Queue...");
         const historyRef = ref(db, 'results_history');
         const newEntryRef = push(historyRef); 
         
+        // ✅ CORRECT HISTORY UPDATE
         await set(newEntryRef, {
             result: finalResult,
-            multiplier: finalMulti, // <--- ADD THIS EXACT LINE
+            multiplier: finalMulti, 
             timestamp: Date.now()
         });
         // 2. CLEANUP HISTORY (Keep last 20)
@@ -183,22 +216,26 @@ async function runSpinSequence() {
                         return (parseFloat(currentBal) || 0) + winAmount;
                     });
 
-                    // B. Log the transaction in the Player's Passbook
+                   // B. Log the transaction in the Player's Passbook
                     if (txnResult.committed) {
                         const newBal = txnResult.snapshot.val();
                         const passbookRef = push(ref(db, `users/${uid}/transactions`));
-                       await set(passbookRef, {
+                        
+                        await set(passbookRef, {
                             amount: winAmount,
                             balance: newBal,
                             description: `Won on ${CARD_MAP[finalResult - 1].rank}${CARD_MAP[finalResult - 1].suit} (${finalMulti}x)`,
                             date: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-                            billNo: "SYS-PAYOUT" // <--- ADD THIS EXACT LINE
+                            billNo: "SYS-PAYOUT",
+                            spin_count: dailySpinCount, 
+                            timestamp: Date.now()
                         });
+                        
                         console.log(`✅ Paid ₹${winAmount} to User: ${uid}`);
                     }
-                }
-            }
-        }
+                } // End of if (playerBets[finalResult])
+            } // End of for (const [uid...
+        } // End of if (betsSnap.exists())
 
         // UPDATE FIREBASE: SUBTRACT PAYOUTS FROM HOUSE VOLUME
         if (totalPayout > 0) {
@@ -214,7 +251,7 @@ async function runSpinSequence() {
 
         // 3. CLEANUP & RESET 
         set(ref(db, 'current_round_bets'), {});
-        update(ref(db, 'house_control'), { number: 0, multiplier: 1 });
+       update(ref(db, 'house_stats'), { daily_spin_count: dailySpinCount })
 
         resetGame();
 
@@ -237,7 +274,7 @@ async function checkDailyReset() {
         timeZone: 'Asia/Kolkata', // Forces 12AM India Time
         year: 'numeric', month: 'numeric', day: 'numeric'
     });
-    const todayStr = formatter.format(now); // e.g. "21/01/2026"
+    const todayStr = formatter.format(now);
 
     // 2. Fetch from Firebase ONLY ONCE when server first starts
     if (localLastResetDate === null) {
@@ -245,8 +282,9 @@ async function checkDailyReset() {
         const snapshot = await get(volRef);
         const stats = snapshot.val() || {};
         
-        // Save to local memory
+        // ✅ Load everything into memory here
         localLastResetDate = stats.last_reset_date || todayStr; 
+        dailySpinCount = stats.daily_spin_count || 0; 
         return; 
     }
 
@@ -254,19 +292,20 @@ async function checkDailyReset() {
     if (todayStr !== localLastResetDate) {
         console.log(`📅 NEW DAY DETECTED (${todayStr}) - RESETTING DAILY VOLUME & HISTORY`);
         
-        // A. Reset House Volume
+        dailySpinCount = 0; // Reset spin count in memory
+
         await update(ref(db, 'house_stats'), { 
             daily_volume: 0, 
+            daily_spin_count: 0, // Reset spin count in database
             last_reset_date: todayStr 
         });
 
-        // B. WIPE HISTORY QUEUE
         await set(ref(db, 'results_history'), null);
-        
-        // C. Update local memory so it doesn't trigger again today
         localLastResetDate = todayStr;
-    }
+    } 
 }
+
+    
 
 /// --- 6. RENDER DEPLOYMENT SERVER ---
 const appServer = express();
