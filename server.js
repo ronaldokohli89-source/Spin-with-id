@@ -275,6 +275,8 @@ async function runSpinSequence() {
         // 3. CLEANUP & RESET 
         set(ref(db, 'current_round_bets'), {});
        update(ref(db, 'house_stats'), { daily_spin_count: dailySpinCount })
+       // 👇 ADD THIS LINE TO CLEAR THE RIGGING AFTER EVERY SPIN 👇
+        set(ref(db, 'house_control'), null);
 
         resetGame();
 
